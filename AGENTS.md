@@ -1,3 +1,34 @@
 # Expo HAS CHANGED
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+
+# Pepmaxing
+
+Peptide / GLP-1 tracking app. Expo SDK 57, Expo Router (file-based, routes in `src/app`),
+TypeScript strict, React Compiler enabled, Reanimated 4 + react-native-worklets.
+
+## Environment
+
+- Node is managed by nvm (`~/.nvm`, default = LTS). In non-login shells run
+  `export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"` first.
+- No Homebrew on this machine. Xcode is installed from the App Store (needed for `npm run ios`).
+
+## Commands
+
+- `npm start` — Metro dev server (Expo Go / dev client / web on http://localhost:8081)
+- `npm run ios` / `npm run android` — start and open a simulator/emulator
+- `npm run typecheck` — `tsc --noEmit` (run `npm start` once first so `expo-env.d.ts` is generated)
+- `npm run lint` — `expo lint` (ESLint 9 flat config, `eslint-config-expo`)
+- `npm run brand:assets` — regenerate app icons, splash mark and favicon from `assets/brand/helix-mark.svg`
+
+## Conventions
+
+- Path alias `@/*` -> `src/*`, `@/assets/*` -> `assets/*`.
+- Dark-first UI: `userInterfaceStyle` is `dark`, root background `#000000`, `useTheme()` falls back to dark.
+  Palette lives in `src/constants/theme.ts`; brand strings/geometry in `src/constants/brand.ts`.
+- Splash: native launch screen (expo-splash-screen plugin in `app.json`, black + white mark, `imageWidth` 240)
+  hands off to `src/components/splash/animated-splash.tsx`, whose first frame is identical.
+  `SplashMark.imageWidth` in `brand.ts` must stay in sync with `imageWidth` in `app.json`.
+- The native splash is NOT visible in Expo Go or dev builds — verify it on a preview/production build.
+- Prefer `scheduleOnRN` from `react-native-worklets` over `runOnJS`.
+- Use `style.pointerEvents`, not the `pointerEvents` prop (deprecated in RN 0.86).

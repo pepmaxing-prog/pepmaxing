@@ -1,18 +1,37 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { AnimatedSplash } from '@/components/splash/animated-splash';
+import { Brand } from '@/constants/brand';
+import { Colors } from '@/constants/theme';
 
+// Keep the native splash up until AnimatedSplash has painted its identical first frame.
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+const theme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: Colors.dark.text,
+    background: Colors.dark.background,
+    card: Colors.dark.backgroundElement,
+    text: Colors.dark.text,
+    border: Colors.dark.border,
+  },
+};
+
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+    <ThemeProvider value={theme}>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: Brand.black },
+        }}
+      />
+      <AnimatedSplash />
     </ThemeProvider>
   );
 }
