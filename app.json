@@ -31,9 +31,20 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#000000",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 240,
-          "resizeMode": "contain"
+          "ios": {
+            "image": "./assets/images/splash-blank.png",
+            "imageWidth": 1
+          },
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 240
+          }
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This lets us measure which campaigns bring people to Pepmaxing. Your protocols and health data stay on your device and are never sold."
         }
       ]
     ],

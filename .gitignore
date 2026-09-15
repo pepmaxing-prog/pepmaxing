@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Skia prebuilt binaries are fetched by npm; never commit them
+node_modules/@shopify/react-native-skia/libs/

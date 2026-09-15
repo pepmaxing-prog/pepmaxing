@@ -28,6 +28,13 @@ export const Colors = {
   },
 } as const;
 
+/** Single accent used sparingly for "done / on track" states. */
+export const Accent = {
+  primary: '#34D399',
+  primarySoft: 'rgba(52, 211, 153, 0.18)',
+  liquid: '#7DD3FC',
+} as const;
+
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
@@ -54,6 +61,28 @@ export const Fonts = Platform.select({
     mono: 'var(--font-mono)',
   },
 });
+
+/**
+ * Brand typefaces (Inter / Inter Display, loaded in the root layout via expo-font).
+ * Inter Display is tuned for large sizes — headlines and the wordmark; Inter for body copy.
+ */
+export const Typeface = {
+  display: 'InterDisplay-SemiBold',
+  displayMedium: 'InterDisplay-Medium',
+  body: 'Inter-Regular',
+  bodyMedium: 'Inter-Medium',
+  bodySemiBold: 'Inter-SemiBold',
+  bodyBold: 'Inter-Bold',
+} as const;
+
+export const BrandFonts = {
+  [Typeface.display]: require('@/assets/fonts/InterDisplay-SemiBold.ttf'),
+  [Typeface.displayMedium]: require('@/assets/fonts/InterDisplay-Medium.ttf'),
+  [Typeface.body]: require('@/assets/fonts/Inter-Regular.ttf'),
+  [Typeface.bodyMedium]: require('@/assets/fonts/Inter-Medium.ttf'),
+  [Typeface.bodySemiBold]: require('@/assets/fonts/Inter-SemiBold.ttf'),
+  [Typeface.bodyBold]: require('@/assets/fonts/Inter-Bold.ttf'),
+};
 
 export const Spacing = {
   half: 2,
