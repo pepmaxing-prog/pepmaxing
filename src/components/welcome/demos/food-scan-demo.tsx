@@ -1,16 +1,15 @@
 import {
   BlurMask,
   Canvas,
-  Circle,
   Group,
   Line,
   LinearGradient,
   Path,
   RadialGradient,
   Rect,
-  RoundedRect,
   vec,
 } from '@shopify/react-native-skia';
+import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -30,36 +29,32 @@ import { Typeface } from '@/constants/theme';
 
 import { AnimatedText, Demo, DEMO_WIDTH, MockStatusBar, useDemoLoop } from './shared';
 
-const LOOP_MS = 7000;
+const LOOP_MS = 7200;
 const VIEW_H = 420;
-const FRAME = { left: 34, top: 78, size: 232 } as const;
-const PLATE = { x: 150, y: 205, r: 112 } as const;
+const FRAME = { left: 22, top: 84, size: 256 } as const;
+/** Photo: CC0 poke bowl, see assets/images/demo/CREDITS.md. Cropped to the viewfinder's 5:7. */
+const PHOTO = require('@/assets/images/demo/poke-bowl.jpg');
 
 const MEAL = {
-  title: 'Grilled salmon bowl',
-  kcal: 612,
+  title: 'Salmon & tuna poke bowl',
+  kcal: 620,
   macros: [
-    { label: 'Protein', grams: 46, color: Demo.accent },
-    { label: 'Carbs', grams: 42, color: '#F5F5F7' },
-    { label: 'Fat', grams: 28, color: '#8E9098' },
+    { label: 'Protein', grams: 38, color: Demo.accent },
+    { label: 'Carbs', grams: 58, color: '#F5F5F7' },
+    { label: 'Fat', grams: 24, color: '#8E9098' },
   ],
 } as const;
 
+/** Pin positions are in viewfinder coordinates, placed on the actual ingredients in the photo. */
 const PINS = [
-  { label: 'Salmon', x: 150, y: 168, at: 0 },
-  { label: 'Quinoa', x: 96, y: 258, at: 250 },
-  { label: 'Asparagus', x: 222, y: 200, at: 500 },
+  { label: 'Salmon', x: 184, y: 272, at: 0 },
+  { label: 'Tuna', x: 46, y: 146, at: 220 },
+  { label: 'Avocado', x: 222, y: 152, at: 440 },
+  { label: 'Seaweed', x: 64, y: 268, at: 660 },
 ] as const;
-const PINS_START = 1350;
+const PINS_START = 1400;
 const PIN_DURATION = 460;
 const PINS_TOTAL = PINS[PINS.length - 1].at + PIN_DURATION;
-
-/** Pseudo-random grain dots for the quinoa. Deterministic so the illustration never flickers. */
-const GRAINS = Array.from({ length: 26 }, (_, i) => {
-  const a = (i * 137.5 * Math.PI) / 180;
-  const r = 6 + ((i * 7919) % 100) / 100 * 24;
-  return { x: 96 + Math.cos(a) * r * 1.35, y: 252 + Math.sin(a) * r * 0.85 };
-});
 
 const easeInOut = Easing.inOut(Easing.cubic);
 
@@ -107,86 +102,23 @@ export function FoodScanDemo({ active }: { active: boolean }) {
 
   return (
     <View style={styles.screen}>
+      <Image source={PHOTO} style={styles.viewfinder} contentFit="cover" cachePolicy="memory-disk" />
       <Canvas style={styles.viewfinder}>
-        {/* Table surface */}
+        {/* Camera treatment: gentle darkening, edge vignette, and a scrim behind the header */}
+        <Rect x={0} y={0} width={DEMO_WIDTH} height={VIEW_H} color="rgba(0,0,0,0.14)" />
         <Rect x={0} y={0} width={DEMO_WIDTH} height={VIEW_H}>
-          <LinearGradient start={vec(0, 0)} end={vec(DEMO_WIDTH, VIEW_H)} colors={['#3B302A', '#231C18', '#120E0B']} />
+          <RadialGradient
+            c={vec(DEMO_WIDTH / 2, FRAME.top + FRAME.size / 2)}
+            r={300}
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
+            positions={[0.55, 1]}
+          />
         </Rect>
-
-        {/* Plate */}
-        <Circle cx={PLATE.x} cy={PLATE.y + 10} r={PLATE.r + 4} color="rgba(0,0,0,0.5)">
-          <BlurMask blur={20} style="normal" />
-        </Circle>
-        <Circle cx={PLATE.x} cy={PLATE.y} r={PLATE.r}>
-          <RadialGradient c={vec(PLATE.x - 20, PLATE.y - 30)} r={PLATE.r * 1.3} colors={['#F7F4EF', '#E9E4DC', '#D8D2C8']} />
-        </Circle>
-        <Circle cx={PLATE.x} cy={PLATE.y} r={PLATE.r - 14} style="stroke" strokeWidth={1.5} color="rgba(0,0,0,0.06)" />
-
-        {/* Quinoa */}
-        <Path path="M62 240 C70 214 112 210 130 228 C150 246 142 282 112 288 C84 294 52 270 62 240 Z" color="rgba(0,0,0,0.12)">
-          <BlurMask blur={6} style="normal" />
-        </Path>
-        <Path path="M62 240 C70 214 112 210 130 228 C150 246 142 282 112 288 C84 294 52 270 62 240 Z">
-          <RadialGradient c={vec(98, 246)} r={44} colors={['#F1E4C4', '#E3CFA4']} />
-        </Path>
-        {GRAINS.map((g, i) => (
-          <Circle key={i} cx={g.x} cy={g.y} r={1.9} color="#CDB183" />
-        ))}
-
-        {/* Asparagus */}
-        <Group origin={vec(212, 214)} transform={[{ rotate: 0.56 }]}>
-          {[0, 11, 22, 33].map((dx, i) => (
-            <Group key={dx}>
-              <RoundedRect x={196 + dx} y={160 + (i % 2) * 6} width={7} height={104} r={3.5}>
-                <LinearGradient start={vec(196 + dx, 160)} end={vec(203 + dx, 160)} colors={['#86C284', '#5B9A59', '#487F47']} />
-              </RoundedRect>
-              <RoundedRect x={195 + dx} y={156 + (i % 2) * 6} width={9} height={16} r={4.5} color="#3F7A40" />
-            </Group>
-          ))}
-        </Group>
-
-        {/* Salmon */}
-        <Group origin={vec(150, 196)} transform={[{ rotate: -0.28 }]}>
-          <RoundedRect x={94} y={166} width={112} height={64} r={18} color="rgba(0,0,0,0.25)">
-            <BlurMask blur={8} style="normal" />
-          </RoundedRect>
-          <RoundedRect x={94} y={168} width={112} height={62} r={18} color="#B24A33" />
-          <RoundedRect x={94} y={165} width={112} height={62} r={18}>
-            <LinearGradient start={vec(94, 165)} end={vec(206, 227)} colors={['#F7A088', '#EC7A57', '#DB6244']} />
-          </RoundedRect>
-          <Path path="M104 184 C128 172 160 206 194 190" style="stroke" strokeWidth={2.5} strokeCap="round" color="rgba(255,225,210,0.7)" />
-          <Path path="M106 200 C132 190 160 220 192 206" style="stroke" strokeWidth={2.5} strokeCap="round" color="rgba(255,225,210,0.6)" />
-          <Path path="M112 214 C136 206 158 228 186 218" style="stroke" strokeWidth={2} strokeCap="round" color="rgba(255,225,210,0.5)" />
-          <RoundedRect x={94} y={165} width={112} height={62} r={18} style="stroke" strokeWidth={1} color="rgba(255,255,255,0.18)" />
-        </Group>
-
-        {/* Cherry tomatoes */}
-        {[
-          { x: 200, y: 274, r: 12 },
-          { x: 222, y: 288, r: 10 },
-        ].map((t) => (
-          <Group key={t.x}>
-            <Circle cx={t.x} cy={t.y + 3} r={t.r} color="rgba(0,0,0,0.25)">
-              <BlurMask blur={5} style="normal" />
-            </Circle>
-            <Circle cx={t.x} cy={t.y} r={t.r}>
-              <RadialGradient c={vec(t.x - 3, t.y - 4)} r={t.r * 1.4} colors={['#FF7B6B', '#E24A3E', '#B9302A']} />
-            </Circle>
-            <Circle cx={t.x - t.r * 0.35} cy={t.y - t.r * 0.4} r={t.r * 0.28} color="rgba(255,255,255,0.55)" />
-            <Circle cx={t.x} cy={t.y - t.r + 1} r={2.4} color="#4E8A4C" />
-          </Group>
-        ))}
-
-        {/* Lemon wedge */}
-        <Path path="M96 302 A16 16 0 0 1 128 302 Z" color="#F6D65B" />
-        <Path path="M96 302 A16 16 0 0 1 128 302 Z" style="stroke" strokeWidth={2} color="#E9BC2C" />
-        <Line p1={vec(112, 302)} p2={vec(100, 292)} strokeWidth={1} color="rgba(255,250,220,0.8)" />
-        <Line p1={vec(112, 302)} p2={vec(112, 286)} strokeWidth={1} color="rgba(255,250,220,0.8)" />
-        <Line p1={vec(112, 302)} p2={vec(124, 292)} strokeWidth={1} color="rgba(255,250,220,0.8)" />
-
-        {/* Camera vignette */}
-        <Rect x={0} y={0} width={DEMO_WIDTH} height={VIEW_H}>
-          <RadialGradient c={vec(PLATE.x, PLATE.y)} r={270} colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.65)']} positions={[0.5, 1]} />
+        <Rect x={0} y={0} width={DEMO_WIDTH} height={120}>
+          <LinearGradient start={vec(0, 0)} end={vec(0, 120)} colors={['rgba(0,0,0,0.72)', 'rgba(0,0,0,0)']} />
+        </Rect>
+        <Rect x={0} y={VIEW_H - 90} width={DEMO_WIDTH} height={90}>
+          <LinearGradient start={vec(0, VIEW_H - 90)} end={vec(0, VIEW_H)} colors={['rgba(11,9,8,0)', 'rgba(11,9,8,1)']} />
         </Rect>
 
         {/* Scan frame */}
@@ -247,7 +179,7 @@ export function FoodScanDemo({ active }: { active: boolean }) {
           </View>
           <View style={styles.confidence}>
             <View style={styles.confidenceDot} />
-            <Text style={styles.confidenceText}>3 items</Text>
+            <Text style={styles.confidenceText}>{PINS.length} items</Text>
           </View>
         </View>
 
