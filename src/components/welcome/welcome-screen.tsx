@@ -40,7 +40,7 @@ const ENTER_MS = 820;
 // Vertical budget (pt). The device takes whatever is left between these.
 const BRAND_ROW = 52;
 const DEVICE_TO_TEXT = 26;
-const TEXT_BLOCK = 150;
+const TEXT_BLOCK = 134;
 const TEXT_TO_ACTIONS = 8;
 const ACTIONS_BLOCK = 132;
 
@@ -270,11 +270,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    color: '#B4B7BE',
+    color: '#A9ACB4',
     fontFamily: Typeface.body,
-    fontSize: 16,
-    lineHeight: 22.5,
+    fontSize: 14.5,
+    lineHeight: 20,
+    letterSpacing: -0.1,
     textAlign: 'center',
+    maxWidth: 300,
   },
   actions: {
     position: 'absolute',

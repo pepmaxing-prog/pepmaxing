@@ -9,17 +9,17 @@ export const WELCOME_PAGES: WelcomePage[] = [
   {
     key: 'protocol',
     headline: 'Your protocol,\nrun with precision.',
-    subtitle: 'Every compound, dose and cycle in one place, with reminders you can trust.',
+    subtitle: 'Every compound, dose and cycle in one place. Never miss a dose.',
   },
   {
     key: 'reconstitute',
     headline: 'Reconstitute\nwith confidence.',
-    subtitle: 'Vial, water, dose — see exactly how many units to draw, on a real syringe.',
+    subtitle: 'Enter your vial, water and dose. See exactly how many units to draw.',
   },
   {
     key: 'assistant',
     headline: 'Ask anything,\nanytime.',
-    subtitle: 'Grounded in your protocol and the research. Never a guessed dose.',
+    subtitle: 'Clear answers grounded in your protocol and real research.',
   },
 ];
 
