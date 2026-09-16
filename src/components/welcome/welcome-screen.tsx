@@ -41,7 +41,7 @@ const ENTER_MS = 820;
 // Vertical budget (pt). The device takes whatever is left between these.
 const BRAND_ROW = 52;
 const DEVICE_TO_TEXT = 26;
-const TEXT_BLOCK = 134;
+const TEXT_BLOCK = 96;
 const TEXT_TO_ACTIONS = 8;
 const ACTIONS_BLOCK = 132;
 
@@ -249,7 +249,9 @@ function PageCopy({
   return (
     <View style={{ width, paddingTop: top }}>
       <Animated.View style={[styles.copy, style]}>
-        <Text style={styles.headline}>{headline}</Text>
+        <Text style={styles.headline} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+          {headline}
+        </Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </Animated.View>
     </View>
@@ -262,13 +264,13 @@ const styles = StyleSheet.create({
   deviceWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   screens: { flexDirection: 'row', flex: 1 },
   pager: { ...StyleSheet.absoluteFill },
-  copy: { alignSelf: 'center', paddingHorizontal: Spacing.five, maxWidth: 380, gap: 10 },
+  copy: { alignSelf: 'stretch', alignItems: 'center', paddingHorizontal: Spacing.four, gap: 8 },
   headline: {
     color: Colors.dark.text,
     fontFamily: Typeface.display,
-    fontSize: 32,
-    lineHeight: 37,
-    letterSpacing: -1,
+    fontSize: 27,
+    lineHeight: 32,
+    letterSpacing: -0.8,
     textAlign: 'center',
   },
   subtitle: {

@@ -1,6 +1,6 @@
 export type WelcomePage = {
   key: 'protocol' | 'reconstitute' | 'food' | 'assistant';
-  /** Line breaks are deliberate: balanced two-line headlines, no orphaned words. */
+  /** Kept short enough to sit on a single line. */
   headline: string;
   subtitle: string;
 };
@@ -8,22 +8,22 @@ export type WelcomePage = {
 export const WELCOME_PAGES: WelcomePage[] = [
   {
     key: 'protocol',
-    headline: 'Your protocol,\nrun with precision.',
+    headline: 'Your protocol, perfected.',
     subtitle: 'Every compound, dose and cycle in one place. Never miss a dose.',
   },
   {
     key: 'reconstitute',
-    headline: 'Reconstitute\nwith confidence.',
+    headline: 'Exact doses, every time.',
     subtitle: 'Enter your vial, water and dose. See exactly how many units to draw.',
   },
   {
     key: 'food',
-    headline: 'Log meals\nin seconds.',
+    headline: 'Log meals in seconds.',
     subtitle: 'Point your camera at any plate. Calories and macros, logged instantly.',
   },
   {
     key: 'assistant',
-    headline: 'Ask anything,\nanytime.',
+    headline: 'Ask anything, anytime.',
     subtitle: 'Clear answers grounded in your protocol and real research.',
   },
 ];
