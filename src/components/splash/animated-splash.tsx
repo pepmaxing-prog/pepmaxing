@@ -12,7 +12,6 @@ import {
   Skia,
   StrokeCap,
   StrokeJoin,
-  useClock,
   usePathValue,
   vec,
   type SkPath,
@@ -26,6 +25,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
+  useFrameCallback,
   useReducedMotion,
   useSharedValue,
   withDelay,
@@ -35,7 +35,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { MOTE_OPACITY, MOTES, motePosition, StageVignette } from '@/components/stage/stage';
+import { MOTE_OPACITY, MOTES, motePosition, STAGE_EPOCH, stageTime, StageVignette } from '@/components/stage/stage';
 import { Brand } from '@/constants/brand';
 import { HEAD, HELIX_GLYPH, RIBBON_MAX_WIDTH } from '@/constants/helix-geometry';
 import { Spacing, Typeface } from '@/constants/theme';
@@ -116,7 +116,10 @@ export function AnimatedSplash({ ready: assetsReady = true, onExitStart, onFinis
   const sweep = useSharedValue(0);
   const wordmark = useSharedValue(0);
   const exit = useSharedValue(0);
-  const clock = useClock();
+  const now = useSharedValue(STAGE_EPOCH);
+  useFrameCallback(() => {
+    now.value = Date.now();
+  });
 
   useEffect(() => {
     if (!ready) return;
@@ -210,7 +213,7 @@ export function AnimatedSplash({ ready: assetsReady = true, onExitStart, onFinis
   const particleOpacity = useDerivedValue(() => stage.value * (1 - exit.value) * MOTE_OPACITY);
   const particles = usePathValue((builder) => {
     'worklet';
-    const t = clock.value / 1000;
+    const t = stageTime(now.value);
     for (let i = 0; i < MOTES.length; i++) {
       const { x, y } = motePosition(MOTES[i], t, width, height);
       builder.addCircle(x, y, MOTES[i].radius);

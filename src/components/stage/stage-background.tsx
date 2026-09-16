@@ -1,8 +1,8 @@
-import { Canvas, Path, RadialGradient, Rect, useClock, usePathValue, vec } from '@shopify/react-native-skia';
+import { Canvas, Path, RadialGradient, Rect, usePathValue, vec } from '@shopify/react-native-skia';
 import { StyleSheet } from 'react-native';
-import { useDerivedValue, useReducedMotion, type SharedValue } from 'react-native-reanimated';
+import { useDerivedValue, useFrameCallback, useReducedMotion, useSharedValue, type SharedValue } from 'react-native-reanimated';
 
-import { MOTE_OPACITY, MOTES, motePosition, StageVignette } from './stage';
+import { MOTE_OPACITY, MOTES, motePosition, STAGE_EPOCH, stageTime, StageVignette } from './stage';
 
 type Props = {
   width: number;
@@ -16,11 +16,14 @@ type Props = {
 /** Full-screen Skia stage: the vignette and drifting motes shared with the splash. */
 export function StageBackground({ width, height, center, opacity = 1 }: Props) {
   const reducedMotion = useReducedMotion();
-  const clock = useClock();
+  const now = useSharedValue(STAGE_EPOCH);
+  useFrameCallback(() => {
+    now.value = Date.now();
+  }, !reducedMotion);
 
   const motes = usePathValue((builder) => {
     'worklet';
-    const t = reducedMotion ? 0 : clock.value / 1000;
+    const t = reducedMotion ? 0 : stageTime(now.value);
     for (let i = 0; i < MOTES.length; i++) {
       const { x, y } = motePosition(MOTES[i], t, width, height);
       builder.addCircle(x, y, MOTES[i].radius);

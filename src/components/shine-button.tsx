@@ -29,12 +29,21 @@ const SWEEP_MS = 1100;
 const SWEEP_EVERY_MS = 4200;
 
 /** Primary call-to-action: a light surface with a slow specular sweep and a soft glow. */
-export function ShineButton({ label, style, shineDelay = 0, ...pressable }: Props) {
+export function ShineButton({ label, style, shineDelay = 0, disabled, ...pressable }: Props) {
   const reducedMotion = useReducedMotion();
   const sweep = useSharedValue(0);
+  const enabled = useSharedValue(disabled ? 0 : 1);
 
   useEffect(() => {
-    if (reducedMotion) return;
+    enabled.value = withTiming(disabled ? 0 : 1, { duration: 260 });
+  }, [disabled, enabled]);
+
+  useEffect(() => {
+    if (reducedMotion || disabled) {
+      cancelAnimation(sweep);
+      sweep.value = 0;
+      return;
+    }
     sweep.value = withDelay(
       shineDelay,
       withRepeat(
@@ -48,21 +57,31 @@ export function ShineButton({ label, style, shineDelay = 0, ...pressable }: Prop
     );
     return () => cancelAnimation(sweep);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reducedMotion, shineDelay]);
+  }, [reducedMotion, shineDelay, disabled]);
 
   const shineStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: -160 + sweep.value * 620 }, { skewX: '-22deg' }],
     opacity: sweep.value === 0 || sweep.value === 1 ? 0 : 1,
   }));
+  const enabledStyle = useAnimatedStyle(() => ({
+    opacity: 0.38 + 0.62 * enabled.value,
+  }));
 
   return (
-    <PressableScale accessibilityRole="button" {...pressable} style={[styles.glow, style]}>
-      <View style={styles.surface}>
-        <Animated.View pointerEvents="none" style={[styles.shine, shineStyle]} />
-        <View pointerEvents="none" style={styles.topEdge} />
-        <Text style={styles.label}>{label}</Text>
-      </View>
-    </PressableScale>
+    <Animated.View style={[style, enabledStyle]}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !!disabled }}
+        disabled={disabled}
+        {...pressable}
+        style={styles.glow}>
+        <View style={styles.surface}>
+          <Animated.View pointerEvents="none" style={[styles.shine, shineStyle]} />
+          <View pointerEvents="none" style={styles.topEdge} />
+          <Text style={styles.label}>{label}</Text>
+        </View>
+      </PressableScale>
+    </Animated.View>
   );
 }
 

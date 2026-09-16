@@ -38,6 +38,8 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
+              animation: 'fade',
+              animationDuration: 360,
               contentStyle: { backgroundColor: Brand.black },
             }}
           />

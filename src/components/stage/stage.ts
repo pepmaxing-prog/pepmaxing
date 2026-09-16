@@ -14,6 +14,17 @@ export type Mote = { x: number; y: number; speed: number; radius: number; wobble
 
 export const MOTE_OPACITY = 0.45;
 
+/**
+ * All stages share one clock so motes are in identical positions on every screen
+ * and cross-fades between screens never make them jump.
+ */
+export const STAGE_EPOCH = Date.now();
+
+export function stageTime(nowMs: number) {
+  'worklet';
+  return (nowMs - STAGE_EPOCH) / 1000;
+}
+
 export const MOTES: Mote[] = Array.from({ length: 18 }, (_, i) => {
   const seed = (i * 9301 + 49297) % 233280;
   const rnd = (n: number) => ((seed * (n + 1) * 7919) % 1000) / 1000;
