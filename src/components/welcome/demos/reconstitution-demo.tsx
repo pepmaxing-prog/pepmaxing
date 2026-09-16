@@ -39,14 +39,13 @@ const PX_PER_UNIT = (BARREL_LEN - 4) / 100;
 const CENTER_Y = BARREL_Y + BARREL_H / 2;
 
 const ticks = (() => {
-  const path = Skia.Path.Make();
+  const builder = Skia.PathBuilder.Make();
   for (let u = 0; u <= 100; u += 5) {
     const x = BARREL_X + 2 + u * PX_PER_UNIT;
     const h = u % 10 === 0 ? 11 : 6;
-    path.moveTo(x, BARREL_Y + 1);
-    path.lineTo(x, BARREL_Y + 1 + h);
+    builder.moveTo(x, BARREL_Y + 1).lineTo(x, BARREL_Y + 1 + h);
   }
-  return path;
+  return builder.build();
 })();
 
 const easeOut = Easing.out(Easing.cubic);

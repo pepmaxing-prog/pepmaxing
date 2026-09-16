@@ -1,5 +1,5 @@
 export type WelcomePage = {
-  key: 'protocol' | 'reconstitute' | 'assistant';
+  key: 'protocol' | 'reconstitute' | 'food' | 'assistant';
   /** Line breaks are deliberate: balanced two-line headlines, no orphaned words. */
   headline: string;
   subtitle: string;
@@ -15,6 +15,11 @@ export const WELCOME_PAGES: WelcomePage[] = [
     key: 'reconstitute',
     headline: 'Reconstitute\nwith confidence.',
     subtitle: 'Enter your vial, water and dose. See exactly how many units to draw.',
+  },
+  {
+    key: 'food',
+    headline: 'Log meals\nin seconds.',
+    subtitle: 'Point your camera at any plate. Calories and macros, logged instantly.',
   },
   {
     key: 'assistant',

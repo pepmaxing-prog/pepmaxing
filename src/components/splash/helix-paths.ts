@@ -22,17 +22,16 @@ export const spineFront = pathFromSvg(SPINE_FRONT_D, 'front spine');
 /** The back ribbon with the front ribbon's halo cut out, so the front reads as passing over it. */
 export const ribbonBack = (() => {
   const back = pathFromSvg(RIBBON_BACK_D, 'back ribbon');
-  const halo = ribbonFront.copy().stroke({ width: GAP_STROKE, join: StrokeJoin.Round });
+  const halo = Skia.Path.Stroke(ribbonFront, { width: GAP_STROKE, join: StrokeJoin.Round });
   return (halo && Skia.Path.MakeFromOp(back, halo, PathOp.Difference)) ?? back;
 })();
 
 /** Whole mark as one path — used to clip the specular sweep. */
-export const markPath = (() => {
-  const path = ribbonBack.copy();
-  path.addPath(ribbonFront);
-  path.addCircle(HEAD.cx, HEAD.cy, HEAD.r);
-  return path;
-})();
+export const markPath = Skia.PathBuilder.Make()
+  .addPath(ribbonBack)
+  .addPath(ribbonFront)
+  .addCircle(HEAD.cx, HEAD.cy, HEAD.r)
+  .build();
 
 export type SpineLut = { xs: number[]; ys: number[] };
 
@@ -51,8 +50,7 @@ export function sampleSpine(spine: SkPath, samples = 96): SpineLut {
       ys.push(p.y);
       continue;
     }
-    const segment = spine.copy();
-    segment.trim(0, t, false);
+    const segment = Skia.Path.Trim(spine, 0, t, false) ?? spine;
     const p = segment.getLastPt();
     xs.push(p.x);
     ys.push(p.y);

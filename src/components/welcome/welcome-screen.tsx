@@ -28,6 +28,7 @@ import { useSplashPhase } from '@/lib/splash-state';
 import { BrandRow } from './brand-row';
 import { DEVICE_ASPECT, DeviceFrame, deviceMetrics } from './device-frame';
 import { AssistantDemo } from './demos/assistant-demo';
+import { FoodScanDemo } from './demos/food-scan-demo';
 import { ProtocolDemo } from './demos/protocol-demo';
 import { ReconstitutionDemo } from './demos/reconstitution-demo';
 import { DEMO_HEIGHT, DEMO_WIDTH } from './demos/shared';
@@ -171,6 +172,7 @@ export function WelcomeScreen() {
                   }}>
                   {p.key === 'protocol' && <ProtocolDemo active={entered && page === i} />}
                   {p.key === 'reconstitute' && <ReconstitutionDemo active={entered && page === i} />}
+                  {p.key === 'food' && <FoodScanDemo active={entered && page === i} />}
                   {p.key === 'assistant' && <AssistantDemo active={entered && page === i} />}
                 </View>
               </View>

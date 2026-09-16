@@ -24,8 +24,7 @@ const ROW_STAGGER = 110;
 const RING_SIZE = 84;
 const RING_STROKE = 8;
 
-const ringPath = Skia.Path.Make();
-ringPath.addCircle(RING_SIZE / 2, RING_SIZE / 2, (RING_SIZE - RING_STROKE) / 2);
+const ringPath = Skia.Path.Circle(RING_SIZE / 2, RING_SIZE / 2, (RING_SIZE - RING_STROKE) / 2);
 const checkPath = Skia.Path.MakeFromSVGString('M5 11.5 L9.5 16 L17 6.5')!;
 
 const COMPOUNDS = [
