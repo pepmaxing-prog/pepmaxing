@@ -15,6 +15,7 @@ import { useShots, useStore } from '@/data/store';
 import { INJECTION_SITES, type DosageUnit, type InjectionSite, type PainLevel } from '@/data/types';
 import { toDateKey, toTimeKey } from '@/lib/dates';
 import { checkDose } from '@/lib/levels';
+import { parsePositiveNumber } from '@/lib/parse';
 
 const UNITS: DosageUnit[] = ['mg', 'mcg', 'iu', 'ml', 'units'];
 const PAIN_LEVELS: PainLevel[] = [1, 2, 3, 4, 5];
@@ -53,12 +54,11 @@ export default function LogShotScreen() {
   const [saving, setSaving] = useState(false);
 
   const insets = useSafeAreaInsets();
-  const parsedAmount = Number.parseFloat(amount.replace(',', '.'));
-  const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
-  const warning = validAmount ? checkDose(medicationId, parsedAmount, unit) : null;
+  const parsedAmount = parsePositiveNumber(amount);
+  const warning = parsedAmount != null ? checkDose(medicationId, parsedAmount, unit) : null;
 
   async function save() {
-    if (!validAmount || saving) return;
+    if (parsedAmount == null || saving) return;
     setSaving(true);
     const draft = {
       medicationId,
@@ -165,8 +165,8 @@ export default function LogShotScreen() {
         <ShineButton
           label={existing ? 'Save changes' : 'Save shot'}
           onPress={save}
-          disabled={!validAmount || saving}
-          style={!validAmount && styles.disabled}
+          disabled={parsedAmount == null || saving}
+          style={parsedAmount == null && styles.disabled}
         />
 
         {existing ? (

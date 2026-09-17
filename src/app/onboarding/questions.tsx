@@ -23,6 +23,7 @@ import { ONBOARDING_STEPS, type OnboardingStep } from '@/data/onboarding-copy';
 import { ensureProfile } from '@/data/profile';
 import { useStore } from '@/data/store';
 import type { OnboardingAnswers } from '@/data/types';
+import { parsePositiveNumber } from '@/lib/parse';
 import { lbToKg } from '@/lib/units';
 
 export default function QuestionsScreen() {
@@ -42,11 +43,14 @@ export default function QuestionsScreen() {
   }
 
   async function advance() {
+    let next = answers;
+
     if (step.kind === 'number') {
-      const parsed = Number.parseFloat(draft.replace(',', '.'));
-      if (!Number.isFinite(parsed) || parsed <= 0) return;
+      const parsed = parsePositiveNumber(draft);
+      if (parsed == null) return;
       const kg = weightUnit === 'lb' ? lbToKg(parsed) : parsed;
-      set(step.id, kg);
+      next = { ...answers, [step.id]: kg };
+      setAnswers(next);
       setDraft('');
       if (step.id === 'startingWeight') {
         await addMeasurement({
@@ -66,7 +70,7 @@ export default function QuestionsScreen() {
     // Answers are kept even though onboarding is only marked complete after the paywall,
     // so a user who quits here resumes with their protocol already known.
     await saveProfile(ensureProfile(data.profile));
-    await setOnboarding({ completed: false, answers });
+    await setOnboarding({ completed: false, answers: next });
     router.replace('/onboarding/personalizing');
   }
 
@@ -195,10 +199,7 @@ export default function QuestionsScreen() {
 /** Education and proof steps are read-only; questions need a value before moving on. */
 function isAnswered(step: OnboardingStep, answers: OnboardingAnswers, draft: string): boolean {
   if (step.kind === 'education' || step.kind === 'proof') return true;
-  if (step.kind === 'number') {
-    const parsed = Number.parseFloat(draft.replace(',', '.'));
-    return Number.isFinite(parsed) && parsed > 0;
-  }
+  if (step.kind === 'number') return parsePositiveNumber(draft) != null;
   return answers[step.id] != null;
 }
 
