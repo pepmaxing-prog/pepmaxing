@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AnimatedSplash } from '@/components/splash/animated-splash';
 import { Brand } from '@/constants/brand';
 import { BrandFonts, Colors } from '@/constants/theme';
+import { StoreProvider } from '@/data/store';
 import { SplashPhaseProvider, useSetSplashPhase } from '@/lib/splash-state';
 import { requestTrackingPermission } from '@/lib/tracking';
 
@@ -32,18 +33,26 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={theme}>
-      <SplashPhaseProvider>
-        <StatusBar style="light" />
-        {ready && (
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: Brand.black },
-            }}
-          />
-        )}
-        <SplashController ready={ready} />
-      </SplashPhaseProvider>
+      <StoreProvider>
+        <SplashPhaseProvider>
+          <StatusBar style="light" />
+          {ready && (
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: Brand.black },
+              }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="log"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+            </Stack>
+          )}
+          <SplashController ready={ready} />
+        </SplashPhaseProvider>
+      </StoreProvider>
     </ThemeProvider>
   );
 }

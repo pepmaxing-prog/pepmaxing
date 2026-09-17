@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, {
@@ -50,6 +51,7 @@ const ACTIONS_BLOCK = 132;
  * demo of a core feature. Pages auto-advance; the active dot fills as a timer.
  */
 export function WelcomeScreen() {
+  const router = useRouter();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -209,7 +211,12 @@ export function WelcomeScreen() {
       {/* Actions */}
       <Animated.View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, Spacing.three) }, actionsStyle]}>
         <Pagination count={WELCOME_PAGES.length} scrollX={scrollX} pageWidth={width} progress={autoProgress} />
-        <ShineButton label="Get Started" style={styles.cta} shineDelay={1400} onPress={() => {}} />
+        <ShineButton
+          label="Get Started"
+          style={styles.cta}
+          shineDelay={1400}
+          onPress={() => router.push('/(tabs)')}
+        />
         <PressableScale style={styles.signIn} accessibilityRole="button" pressedScale={0.98} hitSlop={8} onPress={() => {}}>
           <Text style={styles.signInText}>
             Already have an account? <Text style={styles.signInLink}>Sign in</Text>
