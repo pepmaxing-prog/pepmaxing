@@ -44,3 +44,6 @@ example
 
 # Skia prebuilt binaries are fetched by npm; never commit them
 node_modules/@shopify/react-native-skia/libs/
+
+# Skia web runtime (copied from node_modules by scripts/copy-canvaskit.mjs)
+public/canvaskit.wasm
