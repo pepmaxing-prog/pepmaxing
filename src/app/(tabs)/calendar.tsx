@@ -8,8 +8,8 @@ import { StatRow, StatTile } from '@/components/today/summary-cards';
 import { Card, CardTitle, SectionLabel } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { Colors, Spacing, Typeface } from '@/constants/theme';
-import { useShots } from '@/data/store';
-import { adherenceRate, currentStreak, daysUntilNextDose, inferCadence } from '@/lib/adherence';
+import { useCadence, useShots } from '@/data/store';
+import { adherenceRate, currentStreak, daysUntilNextDose } from '@/lib/adherence';
 import { addDays, dateKeyRange, formatRelativeDay, startOfDay, toDateKey } from '@/lib/dates';
 
 const CYCLE_DAYS = 30;
@@ -20,7 +20,7 @@ export default function CalendarScreen() {
   const [today] = useState(() => startOfDay(new Date()));
   const [selected, setSelected] = useState(() => toDateKey(new Date()));
 
-  const cadence = inferCadence(shots);
+  const cadence = useCadence();
   const untilNext = daysUntilNextDose(shots, cadence, today);
   const dueKey = untilNext != null ? toDateKey(addDays(today, untilNext)) : null;
 

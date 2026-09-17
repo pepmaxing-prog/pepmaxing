@@ -43,6 +43,7 @@ export default function RootLayout() {
                 contentStyle: { backgroundColor: Brand.black },
               }}>
               <Stack.Screen name="index" />
+              <Stack.Screen name="onboarding" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="log"

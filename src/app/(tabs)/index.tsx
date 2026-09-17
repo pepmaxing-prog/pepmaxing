@@ -10,8 +10,8 @@ import { WinCard } from '@/components/today/win-card';
 import { Card, CardTitle, EmptyState, SectionLabel } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { Accent, Colors, Spacing, Typeface } from '@/constants/theme';
-import { useShots } from '@/data/store';
-import { currentStreak, daysUntilNextDose, inferCadence, milestonesFor } from '@/lib/adherence';
+import { useCadence, useShots } from '@/data/store';
+import { currentStreak, daysUntilNextDose, milestonesFor } from '@/lib/adherence';
 import { DAY_MS, formatSince } from '@/lib/dates';
 import { estimatedLevelMcg, formatLevel, levelSeries, shotTimestamp } from '@/lib/levels';
 
@@ -31,7 +31,7 @@ export default function TodayScreen() {
   );
 
   const last = shots[0];
-  const cadence = inferCadence(shots);
+  const cadence = useCadence();
   const level = estimatedLevelMcg(shots, now);
   const streak = currentStreak(shots, cadence);
   const untilNext = daysUntilNextDose(shots, cadence);

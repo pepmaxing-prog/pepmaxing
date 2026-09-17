@@ -24,7 +24,7 @@ export default function LogShotScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const shots = useShots();
-  const { addShot, updateShot, deleteShot } = useStore();
+  const { data, addShot, updateShot, deleteShot } = useStore();
 
   const existing = id ? shots.find((shot) => shot.id === id) : undefined;
   const now = new Date();
@@ -34,7 +34,10 @@ export default function LogShotScreen() {
   );
 
   const [medicationId, setMedicationId] = useState(
-    existing?.medicationId ?? shots[0]?.medicationId ?? MEDICATIONS[0].id,
+    existing?.medicationId ??
+      shots[0]?.medicationId ??
+      data.onboarding.answers.primaryMedicationId ??
+      MEDICATIONS[0].id,
   );
   const [when, setWhen] = useState({
     date: existing?.date ?? toDateKey(now),
