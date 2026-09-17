@@ -215,7 +215,7 @@ export function WelcomeScreen() {
           label="Get Started"
           style={styles.cta}
           shineDelay={1400}
-          onPress={() => router.push('/(tabs)')}
+          onPress={() => router.push('/onboarding/questions')}
         />
         <PressableScale style={styles.signIn} accessibilityRole="button" pressedScale={0.98} hitSlop={8} onPress={() => {}}>
           <Text style={styles.signInText}>

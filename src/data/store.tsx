@@ -1,5 +1,7 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { inferCadence, type Cadence } from '@/lib/adherence';
+
 import { LocalRepository } from './local-repository';
 import { EMPTY_DATA, type AppData, type Repository } from './repository';
 import type {
@@ -128,4 +130,10 @@ export function useProfile(): UserProfile | null {
 
 export function useSubscription(): Subscription {
   return useStore().data.subscription;
+}
+
+/** What the user told us during onboarding, falling back to what the log shows. */
+export function useCadence(): Cadence {
+  const { data } = useStore();
+  return data.onboarding.answers.cadence ?? inferCadence(data.shots);
 }

@@ -125,7 +125,10 @@ function merge(raw: string): AppData {
       shots: sortShots(parsed.shots ?? []),
       measurements: parsed.measurements ?? [],
       subscription: parsed.subscription ?? EMPTY_DATA.subscription,
-      onboarding: parsed.onboarding ?? EMPTY_DATA.onboarding,
+      onboarding: {
+        completed: parsed.onboarding?.completed ?? false,
+        answers: { ...EMPTY_DATA.onboarding.answers, ...parsed.onboarding?.answers },
+      },
     };
   } catch {
     return structuredClone(EMPTY_DATA);

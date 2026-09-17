@@ -42,6 +42,7 @@ export interface Repository {
 export const EMPTY_ANSWERS: OnboardingAnswers = {
   goal: null,
   experience: null,
+  cadence: null,
   primaryMedicationId: null,
   startingWeight: null,
   goalWeight: null,
