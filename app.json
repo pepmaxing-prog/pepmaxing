@@ -22,7 +22,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -46,7 +46,8 @@
         {
           "userTrackingPermission": "This lets us measure which campaigns bring people to Pepmaxing. Your protocols and health data stay on your device and are never sold."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -87,6 +87,18 @@ describe('LocalRepository', () => {
     expect(data.onboarding.answers.goal).toBeNull();
   });
 
+  it('keeps stored answers while adding newer answer keys', async () => {
+    const storage = new MemoryStore();
+    await storage.setItem(
+      'pepmaxing.appdata.v1',
+      JSON.stringify({ onboarding: { completed: true, answers: { goal: 'loseFat' } } }),
+    );
+    const data = await new LocalRepository(storage).load();
+    expect(data.onboarding.completed).toBe(true);
+    expect(data.onboarding.answers.goal).toBe('loseFat');
+    expect(data.onboarding.answers.cadence).toBeNull();
+  });
+
   it('clears everything on reset', async () => {
     const storage = new MemoryStore();
     const repo = new LocalRepository(storage);

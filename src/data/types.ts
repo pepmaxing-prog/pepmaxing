@@ -91,6 +91,8 @@ export type Subscription = {
 export type OnboardingAnswers = {
   goal: 'loseFat' | 'buildMuscle' | 'recover' | 'longevity' | null;
   experience: 'new' | 'restarting' | 'experienced' | null;
+  /** Declared dosing rhythm — overrides the cadence inferred from the log. */
+  cadence: 'daily' | 'weekly' | null;
   primaryMedicationId: string | null;
   startingWeight: number | null;
   goalWeight: number | null;

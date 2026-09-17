@@ -10,6 +10,21 @@ export function dosedDays(shots: Shot[]): string[] {
 export type Cadence = 'daily' | 'weekly';
 
 /**
+ * Cadence read from the log itself rather than asked for: the median gap between dosed
+ * days. Weekly is the default, since every GLP-1 in the catalogue is dosed weekly.
+ */
+export function inferCadence(shots: Shot[]): Cadence {
+  const days = dosedDays(shots);
+  if (days.length < 3) return 'weekly';
+  const gaps = days
+    .slice(1)
+    .map((day, index) => daysBetween(fromDateKey(day), fromDateKey(days[index])))
+    .sort((a, b) => a - b);
+  const median = gaps[Math.floor(gaps.length / 2)];
+  return median <= 3 ? 'daily' : 'weekly';
+}
+
+/**
  * Consecutive on-schedule doses ending at the most recent one.
  * Weekly protocols allow a 2-day grace window either side of the 7-day mark.
  */
