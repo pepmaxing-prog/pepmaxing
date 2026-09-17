@@ -42,6 +42,20 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon symbol="list.bullet.rectangle" focused={focused} />,
         }}
       />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ focused }) => <TabIcon symbol="calendar" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused }) => <TabIcon symbol="person.crop.circle" focused={focused} />,
+        }}
+      />
     </Tabs>
   );
 }

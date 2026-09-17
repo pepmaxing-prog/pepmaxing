@@ -1,5 +1,12 @@
 import type { Shot } from '@/data/types';
-import { adherenceRate, currentStreak, daysUntilNextDose, dosedDays, milestonesFor } from '@/lib/adherence';
+import {
+  adherenceRate,
+  currentStreak,
+  daysUntilNextDose,
+  dosedDays,
+  inferCadence,
+  milestonesFor,
+} from '@/lib/adherence';
 
 function shot(date: string, id = date): Shot {
   return {
@@ -25,6 +32,23 @@ describe('dosedDays', () => {
       '2026-01-08',
       '2026-01-01',
     ]);
+  });
+});
+
+describe('inferCadence', () => {
+  it('defaults to weekly before there is enough history', () => {
+    expect(inferCadence([])).toBe('weekly');
+    expect(inferCadence([shot('2026-01-29'), shot('2026-01-28')])).toBe('weekly');
+  });
+
+  it('reads daily dosing from the median gap', () => {
+    const shots = ['2026-01-29', '2026-01-28', '2026-01-27', '2026-01-26'].map((date) => shot(date));
+    expect(inferCadence(shots)).toBe('daily');
+  });
+
+  it('stays weekly when most gaps are a week', () => {
+    const shots = ['2026-01-29', '2026-01-22', '2026-01-15', '2026-01-14'].map((date) => shot(date));
+    expect(inferCadence(shots)).toBe('weekly');
   });
 });
 

@@ -32,7 +32,8 @@ export function ChipGroup<T extends string | number>({
   onChange,
 }: {
   options: ChipOption<T>[];
-  value: T;
+  /** Null renders the group with nothing selected. */
+  value: T | null;
   onChange: (value: T) => void;
 }) {
   return (

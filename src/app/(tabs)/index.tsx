@@ -6,11 +6,12 @@ import { ShineButton } from '@/components/shine-button';
 import { ShotRow } from '@/components/shots/shot-row';
 import { LevelChart } from '@/components/today/level-chart';
 import { StatRow, StatTile } from '@/components/today/summary-cards';
+import { WinCard } from '@/components/today/win-card';
 import { Card, CardTitle, EmptyState, SectionLabel } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { Accent, Colors, Spacing, Typeface } from '@/constants/theme';
 import { useShots } from '@/data/store';
-import { currentStreak, daysUntilNextDose } from '@/lib/adherence';
+import { currentStreak, daysUntilNextDose, inferCadence, milestonesFor } from '@/lib/adherence';
 import { DAY_MS, formatSince } from '@/lib/dates';
 import { estimatedLevelMcg, formatLevel, levelSeries, shotTimestamp } from '@/lib/levels';
 
@@ -30,12 +31,16 @@ export default function TodayScreen() {
   );
 
   const last = shots[0];
+  const cadence = inferCadence(shots);
   const level = estimatedLevelMcg(shots, now);
-  const streak = currentStreak(shots, 'weekly');
-  const untilNext = daysUntilNextDose(shots, 'weekly');
+  const streak = currentStreak(shots, cadence);
+  const untilNext = daysUntilNextDose(shots, cadence);
+  const win = milestonesFor(shots, cadence)[0];
 
   return (
     <Screen title="Today" subtitle="Your protocol at a glance">
+      {win ? <WinCard milestone={win} /> : null}
+
       <StatRow>
         <StatTile value={`${shots.length}`} label="Shots taken" />
         <StatTile value={last ? formatSince(shotTimestamp(last), now) : '—'} label="Last dose" />
