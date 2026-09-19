@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Platform, StyleSheet, Text, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -19,6 +19,8 @@ import { PressableScale } from './pressable-scale';
 
 type Props = Omit<PressableProps, 'style'> & {
   label: string;
+  /** Leading glyph, e.g. a provider mark. */
+  icon?: ReactNode;
   style?: StyleProp<ViewStyle>;
   /** Delay before the first sweep, e.g. to wait for an entrance animation. */
   shineDelay?: number;
@@ -29,7 +31,7 @@ const SWEEP_MS = 1100;
 const SWEEP_EVERY_MS = 4200;
 
 /** Primary call-to-action: a light surface with a slow specular sweep and a soft glow. */
-export function ShineButton({ label, style, shineDelay = 0, disabled, ...pressable }: Props) {
+export function ShineButton({ label, icon, style, shineDelay = 0, disabled, ...pressable }: Props) {
   const reducedMotion = useReducedMotion();
   const sweep = useSharedValue(0);
   const enabled = useSharedValue(disabled ? 0 : 1);
@@ -78,7 +80,10 @@ export function ShineButton({ label, style, shineDelay = 0, disabled, ...pressab
         <View style={styles.surface}>
           <Animated.View pointerEvents="none" style={[styles.shine, shineStyle]} />
           <View pointerEvents="none" style={styles.topEdge} />
-          <Text style={styles.label}>{label}</Text>
+          <View style={styles.row}>
+            {icon}
+            <Text style={styles.label}>{label}</Text>
+          </View>
         </View>
       </PressableScale>
     </Animated.View>
@@ -122,6 +127,7 @@ const styles = StyleSheet.create({
     experimental_backgroundImage:
       'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0.95) 55%, rgba(255,255,255,0) 100%)',
   },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   label: {
     color: Brand.black,
     fontFamily: Typeface.bodyBold,

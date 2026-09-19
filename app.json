@@ -10,7 +10,9 @@
     "backgroundColor": "#000000",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.pepmaxing.app"
+      "bundleIdentifier": "com.pepmaxing.app",
+      "usesAppleSignIn": true,
+      "appleTeamId": "2NAJ8UU987"
     },
     "android": {
       "package": "com.pepmaxing.app",
@@ -46,7 +48,8 @@
         {
           "userTrackingPermission": "This lets us measure which campaigns bring people to Pepmaxing. Your protocols and health data stay on your device and are never sold."
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

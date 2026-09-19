@@ -9,6 +9,14 @@ export const Brand = {
   white: '#FFFFFF',
 } as const;
 
+/** Public legal pages. Empty until published; links render inert while empty. */
+export const Legal = {
+  termsUrl: '',
+  privacyUrl: '',
+  /** Support inbox for "Contact us"; empty until it exists. */
+  supportEmail: '',
+} as const;
+
 /**
  * Geometry of assets/images/splash-icon.png. The glyph is drawn inside a square
  * canvas at 62% height so Android 12+'s circular splash mask never clips it.

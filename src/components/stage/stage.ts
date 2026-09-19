@@ -5,6 +5,8 @@
  */
 export const StageVignette = {
   colors: ['#111216', '#050506', '#000000'],
+  /** Deep shades of the emerald accent, blended over the stage for the research chapter. */
+  tinted: ['#0E3B2C', '#071C15', '#030A07'],
   positions: [0, 0.55, 1],
   /** Radius as a fraction of screen height. */
   radiusRatio: 0.62,

@@ -22,6 +22,23 @@ TypeScript strict, React Compiler enabled, Reanimated 4 + react-native-worklets.
 
 - `npm start` — Metro dev server (Expo Go / dev client / web on http://localhost:8081)
 - `npm run ios` / `npm run android` — start and open a simulator/emulator
+- `npm run ios:phone` — build a **Release** build onto the connected iPhone (JS embedded, no Metro needed).
+  Do NOT use Debug builds (`expo run:ios --device` without `--configuration Release`) on the phone:
+  Debug builds load JS from Metro over Wi-Fi and the phone usually can't reach this Mac's network,
+  which shows up as "No script URL provided".
+- Do NOT start Metro with `CI=1` while iterating: CI mode disables file watching, so edits never reach the app.
+- After adding a native module (`pod install` re-runs), the first Debug build may link-fail with
+  `Undefined symbols: facebook::react::Sealable` or crash at launch in `Props::Props()` from
+  ExpoModulesCore. Cause: pod install re-extracts the RELEASE prebuilt frameworks but leaves stale
+  `.last_build_configuration` markers saying debug, so the "[RNCore]/[RNDeps]/[Hermes]/[Expo] Replace
+  … for the right configuration" build phases skip the swap. Fix: write `Release` into
+  `ios/Pods/.last_build_configuration`, `ios/Pods/React-Core-prebuilt/.last_build_configuration`,
+  `ios/Pods/ReactNativeDependencies/.last_build_configuration` and `release` into every
+  `ios/Pods/*/artifacts/.last_build_configuration`, then rebuild.
+- `EXPO_PUBLIC_DEV_START_ROUTE=/onboarding/name npm start` opens the app on a given screen (dev only, see `src/app/index.tsx`).
+- Simulators run headless here (Xcode 27 ships no Simulator.app UI). Verify UI with
+  `xcrun simctl io <udid> screenshot out.png` / `recordVideo out.mp4`; there is no way to tap or type, so
+  deep links (`simctl openurl`) get stuck on the "Open in Pepmaxing?" alert — use the dev start route instead.
 - `npm run typecheck` — `tsc --noEmit` (run `npm start` once first so `expo-env.d.ts` is generated)
 - `npm run lint` — `expo lint` (ESLint 9 flat config, `eslint-config-expo`)
 - `npm run brand:assets` — regenerate app icons, splash mark and favicon from `assets/brand/helix-mark.svg`
@@ -35,5 +52,92 @@ TypeScript strict, React Compiler enabled, Reanimated 4 + react-native-worklets.
   hands off to `src/components/splash/animated-splash.tsx`, whose first frame is identical.
   `SplashMark.imageWidth` in `brand.ts` must stay in sync with `imageWidth` in `app.json`.
 - The native splash is NOT visible in Expo Go or dev builds — verify it on a preview/production build.
-- Prefer `scheduleOnRN` from `react-native-worklets` over `runOnJS`.
+- Onboarding copy is a conversation: `TranscriptText` (`src/components/onboarding/typewriter.tsx`) pins the
+  line being typed at mid-screen, moves the finished line up and dims it, and fades anything older away.
+  Display type is Inter Display SemiBold 35/45 on a 428pt-wide phone (`useTranscriptType()` scales it down on
+  narrower devices). Break lines by hand with `\n` so wraps stay balanced; the first step has no header.
+- Video clips for onboarding (`assets/video/signin-*.mp4`) are generated through the Higgsfield MCP
+  (`.devin/mcp_config.local.json`, OAuth, bills the account's own credits; Seedance 2.5, 9:16, 6 s,
+  1080p, no audio ≈ 54 credits each), then re-encoded to 720x1280 ≈ 2.4 Mbps with
+  `swift scripts/transcode-clip.swift in.mp4 out.mp4` (~1.5–1.9 MB per clip). `VideoMontage`
+  cross-dissolves them with one preloaded expo-video player per clip and `replay()`; do NOT swap
+  sources with `replace`/`replaceAsync` — on iOS the swap lands on the main thread after the promise
+  resolves, so a following `play()` hits the old (ended) item and the new clip sits frozen. Keep clips
+  silent and `audioMixingMode` at `mixWithOthers` so the montage never interrupts the user's audio.
+  Don't use `zIndex` on the layers (it lifts them above the screen's UI on iOS); order siblings instead.
+- Auth + data: Supabase (`src/lib/supabase.ts`, lazy client, AsyncStorage sessions, PKCE). Keys come from
+  `.env.local` as `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (restart Metro after
+  adding them; never commit them). `src/lib/auth.ts`: Apple = native `expo-apple-authentication` →
+  `signInWithIdToken`; Google = `signInWithOAuth` opened in `WebBrowser.openAuthSessionAsync`, callback
+  `pepmaxing://auth/callback` (must be in Supabase Auth → Redirect URLs). Cancelling throws
+  `AuthCancelledError` (silent); missing keys throw `AuthNotConfiguredError` (inline notice).
+- Supabase project `hvovmtdkfxdpnasjxqyg` is reachable through the Supabase MCP (`.devin/mcp_config.json`,
+  OAuth via `devin mcp login supabase`). Schema changes: iterate with `execute_sql`, then commit the final
+  SQL both as `apply_migration` and as a file in `supabase/migrations/` (keep the two in sync), and run
+  `get_advisors` (security) afterwards. Load the `supabase` / `supabase-postgres-best-practices` skills
+  (`.devin/skills/`) before touching the database: policies target `to authenticated` and use
+  `(select auth.uid())`, functions pin `search_path = ''`.
+- Schema lives in `supabase/migrations/*.sql` (mirrored to the project via MCP). `profiles`
+  keeps all onboarding answers as JSON plus `onboarding_step`, `referral_code`, `units`, RLS = own row.
+  `src/lib/profile.ts` upserts after sign-in (`reconcileProfile` adopts remote progress when it is
+  further along, e.g. a new device) and `startProfileSync` (root layout) debounces later changes.
+- Onboarding persists locally: `onboardingStore` mirrors to AsyncStorage (`pepmaxing.onboarding.v1`),
+  is hydrated in `_layout.tsx` before any route, and `OnboardingShell` records `step` from the pathname
+  (except `welcome-back`). `index.tsx` routes: `completedAt` → `/home`; `account` set but unfinished →
+  `/onboarding/welcome-back` (sign in again → `resumeRoute()` → saved step); otherwise the saved step or
+  the welcome screen. Sign-in UI is shared via `SignInActions` + `SignInBackdrop`. Paywall's button completes onboarding and goes
+  home; purchases (RevenueCat), PostHog and the Facebook SDK are deliberately not wired yet.
+- The app proper lives in `src/app/(tabs)/` (`home`, `library`, `chat`, `me`) behind `FloatingTabBar`
+  (custom `tabBar` from `expo-router/js-tabs` — import Tabs from there, the `expo-router` export is
+  deprecated) plus the "+" `QuickActionsSheet` (`src/lib/quick-actions.ts`). Home: `Calendar` (week strip ↔
+  month, one progress shared value; a vertical pan anywhere on the card opens it — the page must use the
+  RNGH `ScrollView` and pass its ref as `scrollRef` so `blocksExternalGesture` lets the drag win; closed,
+  an upward drag fails over to scrolling; horizontal swipe changes month; needs `GestureHandlerRootView`
+  in the root layout), day view, empty state, `StatTiles`. The FAB pulses with two Skia radial-gradient
+  halos (RN's `radial-gradient` background was not reliable here). Schedule data comes from
+  `src/lib/schedule.ts` (in-memory until the protocol builder; `currentStreak`, `nextDose`, date helpers).
+- Library: `src/lib/peptides.ts` is the curated catalogue (39 peptides, 6 stacks, 8 categories with colours)
+  plus `savedStore`/`useSaved` (AsyncStorage). Copy sticks to established facts; `evidence` states when data
+  is animal-only; no dose ranges until each has a citation. UI: `Vial` (category-coloured), `PeptideRow`,
+  `StackCard`; screens `(tabs)/library`, `peptide/[id]`, `stack/[id]` (slide_from_right). Search covers
+  name, nickname, blurb, aka and tags; chips filter by category and toggle off on re-tap.
+- `/settings` (slide_from_right): units, reminders (→ system settings), sign out, delete account.
+  Deletion calls the `delete-account` Edge Function (`supabase/functions/delete-account`, deployed via MCP,
+  verify_jwt on) which deletes the caller with the service role; `src/lib/account.ts` then forgets the device.
+  Apple token revocation on delete is still to do. `supabase/functions` is excluded from tsconfig (Deno).
+- `app.json` carries `ios.appleTeamId` and `usesAppleSignIn`; `npx expo prebuild --platform ios`
+  regenerates the pbxproj from the template (even without `--clean`), so never hand-edit `ios/`.
+- Legal URLs live in `Legal` (`brand.ts`) and render inert while empty.
+- Onboarding order: `name` → `goals` → `research` → `experience` → `motivation` → `reassurance` →
+  `about` → `body` → `tour` → `notifications` → `account` → `referral` → `ahead` → `matching` → `chaos` →
+  `precision` → `paywall`. Research, reassurance, tour, ahead and matching are the emerald-tinted
+  chapters: a conversation, then stats/features. Only cite figures with a real study behind them
+  (headline number is the paper's own; source line names the trial/journal and year), no stock
+  illustrations, no invented social proof. `Dial` (`src/components/onboarding/dial.tsx`) is the
+  horizontal Skia ruler used for age, height and weight; body values are stored metric (`heightCm`,
+  `weightKg`) and shown per `units`. `notifications` asks for the real permission via expo-notifications.
+- `matching` is the only step that slides in (`slide_from_right`, set in `onboarding/_layout.tsx`) and it
+  can't be swiped back to; its particle field (`ParticleField`, Skia `Points` driven by shared values on
+  the UI thread) follows fixed beats: captions at 0/1.6/3.2/4.75 s, ring contracts from 1.6 s, collapses
+  at 4.75 s into the check + confetti. It waits for the splash phase like the typewriter does.
+- The pitch chapter after matching stays on the dark stage (the reference flips to white): `chaos` scatters
+  six mock fragments (`ChaosCollage`), `precision` draws two Skia syringes (`Syringe`, 30-unit barrel, plunger
+  animates to `units`), `paywall` reuses `DeviceFrame` + `ProtocolDemo` and reads plans from
+  `src/lib/purchases.ts`. Purchases are NOT wired: `purchasesConfigured` is false, plans are placeholders
+  (never ship them — prices must come from the store products), `purchase()`/`restorePurchases()` throw
+  `PurchasesNotConfiguredError` and the screen shows an inline notice. No social-proof screen by design.
+- Branching: `experience` is single-choice and auto-advances. It selects ONE follow-up question in
+  `motivation.tsx` (`SCRIPTS`: two typed reactions + question + options per level — the "Ready to start"
+  branch is the concerns-style "Anything still holding you back?" with an exclusive "Nothing" option).
+  Changing level clears the answers. `reassurance.tsx` replies to the first option picked (`ANSWERS`,
+  keyed by option id, so every option needs an entry) and replays if the answer changed. Age uses
+  `AgeDial` (horizontal Skia ruler, 18–90) rather than a wheel.
+- Selectable UI comes from `src/components/onboarding/choices.tsx` (`ChoiceCard` grid cards,
+  `ChoiceRow` checklist rows) so every step animates selection the same way. Progress bar denominator is
+  `TOTAL_STEPS` in the shell.
+- Every step passes `onSkip` to `OnboardingShell` while its animations run (Skip sits top-right in the
+  header, which keeps a fixed height so content never shifts). The research chapter tints the stage
+  emerald via the shell's `tint` shared value (`StageVignette.tinted`).
+- Prefer `scheduleOnRN` from `react-native-worklets` over `runOnJS`. `useAnimatedKeyboard` is deprecated in
+  Reanimated 4 (iOS 26 bugs) — use `useKeyboardHeight()` from `src/hooks`.
 - Use `style.pointerEvents`, not the `pointerEvents` prop (deprecated in RN 0.86).

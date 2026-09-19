@@ -12,7 +12,9 @@ export default function OnboardingLayout() {
         animationDuration: 360,
         gestureEnabled: true,
         contentStyle: { backgroundColor: Brand.black },
-      }}
-    />
+      }}>
+      {/* The loader pushes in from the right, like a chapter turn, and can't be swiped back to. */}
+      <Stack.Screen name="matching" options={{ animation: 'slide_from_right', animationDuration: 420, gestureEnabled: false }} />
+    </Stack>
   );
 }

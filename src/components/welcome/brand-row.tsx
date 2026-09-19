@@ -6,21 +6,22 @@ import { Brand } from '@/constants/brand';
 import { HELIX_GLYPH } from '@/constants/helix-geometry';
 import { Typeface } from '@/constants/theme';
 
-const MARK_HEIGHT = 20;
 const GLYPH_HEIGHT = HELIX_GLYPH.bottom - HELIX_GLYPH.top;
-const SCALE = MARK_HEIGHT / GLYPH_HEIGHT;
-const MARK_WIDTH = 1000 * SCALE * 0.6;
+const SIZES = { regular: { mark: 20, word: 16 }, large: { mark: 27, word: 21 } };
 
-/** Small lockup: helix mark + wordmark. */
-export function BrandRow() {
+/** Lockup: helix mark + wordmark. `large` is the app header size. */
+export function BrandRow({ size = 'regular' }: { size?: keyof typeof SIZES }) {
+  const { mark, word } = SIZES[size];
+  const scale = mark / GLYPH_HEIGHT;
+  const markWidth = 1000 * scale * 0.6;
   return (
     <View style={styles.row} accessibilityRole="header" accessibilityLabel={Brand.name}>
-      <Canvas style={{ width: MARK_WIDTH, height: MARK_HEIGHT }}>
-        <Group transform={[{ translateX: MARK_WIDTH / 2 - 500 * SCALE }, { translateY: -HELIX_GLYPH.top * SCALE }, { scale: SCALE }]}>
+      <Canvas style={{ width: markWidth, height: mark }}>
+        <Group transform={[{ translateX: markWidth / 2 - 500 * scale }, { translateY: -HELIX_GLYPH.top * scale }, { scale }]}>
           <Path path={markPath} color="#F5F5F7" />
         </Group>
       </Canvas>
-      <Text style={styles.wordmark}>{Brand.name}</Text>
+      <Text style={[styles.wordmark, { fontSize: word, letterSpacing: -word * 0.025 }]}>{Brand.name}</Text>
     </View>
   );
 }
@@ -30,7 +31,5 @@ const styles = StyleSheet.create({
   wordmark: {
     color: '#F5F5F7',
     fontFamily: Typeface.display,
-    fontSize: 16,
-    letterSpacing: -0.4,
   },
 });
