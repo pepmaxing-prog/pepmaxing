@@ -49,7 +49,24 @@
           "userTrackingPermission": "This lets us measure which campaigns bring people to Pepmaxing. Your protocols and health data stay on your device and are never sold."
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Pepmaxing uses the camera to scan food barcodes, read nutrition labels and take progress photos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pepmaxing accesses your photos so you can add a progress photo or a nutrition label from your library.",
+          "cameraPermission": "Pepmaxing uses the camera to scan food barcodes, read nutrition labels and take progress photos.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

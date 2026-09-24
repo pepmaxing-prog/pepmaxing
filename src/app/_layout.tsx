@@ -11,6 +11,8 @@ import { Brand } from '@/constants/brand';
 import { BrandFonts, Colors } from '@/constants/theme';
 import { onboardingStore } from '@/lib/onboarding-store';
 import { startProfileSync } from '@/lib/profile';
+import { startSync } from '@/lib/sync';
+import { scheduleStore } from '@/lib/schedule';
 import { SplashPhaseProvider, useSetSplashPhase } from '@/lib/splash-state';
 import { requestTrackingPermission } from '@/lib/tracking';
 
@@ -34,8 +36,13 @@ export default function RootLayout() {
   // Saved onboarding answers are read before the first route so it can resume in place.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    onboardingStore.hydrate().then(() => setHydrated(true));
-    return startProfileSync();
+    Promise.all([onboardingStore.hydrate(), scheduleStore.hydrate()]).then(() => setHydrated(true));
+    const stopProfile = startProfileSync();
+    const stopSync = startSync();
+    return () => {
+      stopProfile();
+      stopSync();
+    };
   }, []);
   // Mount the app only once fonts are ready: text laid out with a fallback font and then
   // re-rendered in Inter keeps its old measurements and clips. The splash covers the wait.
@@ -57,6 +64,20 @@ export default function RootLayout() {
               <Stack.Screen name="settings" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
               <Stack.Screen name="peptide/[id]" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
               <Stack.Screen name="stack/[id]" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="protocol/new" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
+              <Stack.Screen name="protocol/track" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="protocol/schedule" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="protocol/compound/[id]" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="log/index" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
+              <Stack.Screen name="log/[id]" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
+              <Stack.Screen name="calculator" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
+              <Stack.Screen name="history" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="metric/[id]" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="food/search" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
+              <Stack.Screen name="food/scan" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
+              <Stack.Screen name="photos/[category]" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="protocol/[id]" options={{ animation: 'slide_from_right', animationDuration: 380 }} />
+              <Stack.Screen name="health/[metric]" options={{ animation: 'slide_from_bottom', animationDuration: 380 }} />
             </Stack>
           )}
           <SplashController ready={ready} />

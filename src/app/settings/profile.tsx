@@ -10,7 +10,7 @@ import { ShineButton } from '@/components/shine-button';
 import { Accent, Spacing, Typeface } from '@/constants/theme';
 import { useOnboarding } from '@/lib/onboarding-store';
 import { AVATAR_TINTS, AVATARS, LABELS, LEVELS, levelFor, MAX_LABELS, preferencesStore, randomUsername, usePreferences, type LabelId } from '@/lib/preferences';
-import { useSchedule } from '@/lib/schedule';
+import { loggedCount, useSchedule } from '@/lib/schedule';
 
 const GOAL_LABEL: Record<string, string> = { 'lose-weight': 'Fat loss', 'build-recover': 'Recovery', 'look-feel': 'Vitality', heal: 'Healing', think: 'Focus', sleep: 'Sleep' };
 
@@ -24,7 +24,7 @@ export default function CommunityProfileScreen() {
   const [labels, setLabels] = useState<LabelId[]>(prefs.labels);
   const [showLevels, setShowLevels] = useState(false);
 
-  const xp = schedule.doses.filter((d) => d.logged).length;
+  const xp = loggedCount(schedule);
   const { level, next, toNext } = levelFor(xp);
   const progress = next ? (xp - level.xp) / (next.xp - level.xp) : 1;
 

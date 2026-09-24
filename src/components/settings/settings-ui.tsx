@@ -4,36 +4,54 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Gutter } from '@/components/onboarding/onboarding-shell';
 import { PressableScale } from '@/components/pressable-scale';
 import { StageBackground } from '@/components/stage/stage-background';
 import { Brand } from '@/constants/brand';
-import { Accent, Spacing, Typeface } from '@/constants/theme';
+import { Accent, AppGutter, Spacing, Typeface } from '@/constants/theme';
 
 export const RED = '#F87171';
 
+/** Back chevron, small centred title and an optional right-hand control — shared by every pushed page. */
+export function PageHeader({ title, right, onBack, close }: { title: string; right?: ReactNode; onBack?: () => void; /** Show × on the right instead of ‹ on the left (for screens that slide up). */ close?: boolean }) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const dismiss = onBack ?? (() => router.back());
+  return (
+    <View style={[styles.header, { paddingTop: insets.top + Spacing.two }]}>
+      {close ? (
+        <View style={styles.iconButton}>{right}</View>
+      ) : (
+        <PressableScale onPress={dismiss} accessibilityRole="button" accessibilityLabel="Back" hitSlop={10} style={styles.iconButton}>
+          <SymbolView name="chevron.left" size={18} weight="medium" tintColor="#F5F5F7" fallback={<Text style={styles.glyph}>‹</Text>} />
+        </PressableScale>
+      )}
+      <Text style={styles.headerTitle} numberOfLines={1}>
+        {title}
+      </Text>
+      {close ? (
+        <PressableScale onPress={dismiss} accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} style={styles.iconButton}>
+          <SymbolView name="xmark" size={15} weight="semibold" tintColor="#F5F5F7" fallback={<Text style={styles.glyph}>×</Text>} />
+        </PressableScale>
+      ) : (
+        <View style={styles.iconButton}>{right}</View>
+      )}
+    </View>
+  );
+}
+
 /** Full-screen settings page: back chevron, small centred title, large title + subtitle, scrolling body. */
 export function SettingsPage({ title, subtitle, children, right, footer }: { title: string; subtitle?: string; children: ReactNode; right?: ReactNode; footer?: ReactNode }) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   return (
     <View style={styles.root}>
       <StageBackground width={width} height={height} center={{ x: width / 2, y: height * 0.15 }} />
-      <View style={[styles.header, { paddingTop: insets.top + Spacing.two }]}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={10} style={styles.iconButton}>
-          <SymbolView name="chevron.left" size={18} weight="medium" tintColor="#F5F5F7" fallback={<Text style={styles.glyph}>‹</Text>} />
-        </PressableScale>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        <View style={styles.iconButton}>{right}</View>
-      </View>
+      <PageHeader title={title} right={right} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        contentContainerStyle={{ paddingHorizontal: Gutter, paddingBottom: Math.max(insets.bottom, Spacing.three) + (footer ? 96 : Spacing.four) }}>
+        contentContainerStyle={{ paddingHorizontal: AppGutter, paddingBottom: Math.max(insets.bottom, Spacing.three) + (footer ? 96 : Spacing.four) }}>
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
@@ -151,5 +169,5 @@ export const styles = StyleSheet.create({
   rowLabel: { fontFamily: Typeface.bodyMedium, fontSize: 15, letterSpacing: -0.2 },
   rowCaption: { color: 'rgba(242,242,244,0.5)', fontFamily: Typeface.body, fontSize: 12.5, lineHeight: 17 },
   rowValue: { maxWidth: '50%', color: 'rgba(242,242,244,0.5)', fontFamily: Typeface.body, fontSize: 13.5 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Gutter, paddingTop: Spacing.two, experimental_backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 40%, #000 100%)' },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: AppGutter, paddingTop: Spacing.two, experimental_backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 40%, #000 100%)' },
 });

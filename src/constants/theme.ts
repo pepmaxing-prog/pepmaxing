@@ -94,5 +94,7 @@ export const Spacing = {
   six: 64,
 } as const;
 
+/** Side margin for the app proper (tabs, sheets, detail screens). Onboarding keeps its wider `Gutter`. */
+export const AppGutter = Spacing.three;
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

@@ -3,10 +3,9 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Gutter } from '@/components/onboarding/onboarding-shell';
 import { StageBackground } from '@/components/stage/stage-background';
 import { Brand } from '@/constants/brand';
-import { Accent, Spacing, Typeface } from '@/constants/theme';
+import { Accent, AppGutter, Spacing, Typeface } from '@/constants/theme';
 
 type Props = { symbol: SFSymbol; title: string; text: string; bullets: string[] };
 
@@ -42,7 +41,7 @@ export function PlaceholderTab({ symbol, title, text, bullets }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Brand.black },
-  content: { flex: 1, paddingHorizontal: Gutter },
+  content: { flex: 1, paddingHorizontal: AppGutter },
   disc: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(52,211,153,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(52,211,153,0.35)', alignItems: 'center', justifyContent: 'center' },
   fallback: { width: 22, height: 22, borderRadius: 11, backgroundColor: Accent.primary },
   title: { marginTop: Spacing.four, color: '#F5F5F7', fontFamily: Typeface.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.8 },

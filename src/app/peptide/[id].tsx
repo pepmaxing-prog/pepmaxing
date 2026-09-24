@@ -6,14 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PeptideRow } from '@/components/library/peptide-row';
 import { Vial } from '@/components/library/vial';
-import { Gutter } from '@/components/onboarding/onboarding-shell';
 import { PressableScale } from '@/components/pressable-scale';
 import { ShineButton } from '@/components/shine-button';
 import { StageBackground } from '@/components/stage/stage-background';
 import { Brand } from '@/constants/brand';
-import { Spacing, Typeface } from '@/constants/theme';
+import { AppGutter, Spacing, Typeface } from '@/constants/theme';
 import { categoryById, peptideById, savedStore, STACKS, STATUS_LABEL, useSaved, PEPTIDES } from '@/lib/peptides';
-import { quickActions } from '@/lib/quick-actions';
 
 export default function PeptideScreen() {
   const router = useRouter();
@@ -56,7 +54,7 @@ export default function PeptideScreen() {
         </PressableScale>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Gutter, paddingBottom: Math.max(insets.bottom, Spacing.three) + 96 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: AppGutter, paddingBottom: Math.max(insets.bottom, Spacing.three) + 96 }}>
         <Animated.View entering={FadeIn.duration(360)} style={styles.hero}>
           <View style={[styles.heroGlow, { backgroundColor: `${category.color}22` }]} />
           <Vial color={category.color} size={64} />
@@ -125,7 +123,7 @@ export default function PeptideScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
-        <ShineButton label="Add to a protocol" onPress={() => quickActions.open()} shineDelay={1600} />
+        <ShineButton label="Add to a protocol" onPress={() => router.push({ pathname: '/protocol/new', params: { compound: peptide.id } })} shineDelay={1600} />
       </View>
     </View>
   );
@@ -170,5 +168,5 @@ const styles = StyleSheet.create({
   stackPillMeta: { color: 'rgba(242,242,244,0.5)', fontFamily: Typeface.body, fontSize: 11.5 },
   list: { gap: Spacing.two },
   disclaimer: { marginTop: Spacing.five, color: 'rgba(242,242,244,0.38)', fontFamily: Typeface.body, fontSize: 12, lineHeight: 17, textAlign: 'center' },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Gutter, paddingTop: Spacing.two, experimental_backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 40%, #000 100%)' },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: AppGutter, paddingTop: Spacing.two, experimental_backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 40%, #000 100%)' },
 });

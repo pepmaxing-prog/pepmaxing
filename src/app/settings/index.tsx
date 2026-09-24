@@ -11,9 +11,9 @@ import { Brand, Legal } from '@/constants/brand';
 import { Accent, Spacing, Typeface } from '@/constants/theme';
 import { currentAccount, deleteAccount, signOut } from '@/lib/account';
 import { useOnboarding } from '@/lib/onboarding-store';
-import { AVATAR_TINTS, AVATARS, estimateGoals, levelFor, preferencesStore, usePreferences } from '@/lib/preferences';
-import { savedStore } from '@/lib/peptides';
-import { scheduleStore, useSchedule } from '@/lib/schedule';
+import { AVATAR_TINTS, AVATARS, estimateGoals, levelFor, usePreferences } from '@/lib/preferences';
+import { loggedCount, useSchedule } from '@/lib/schedule';
+import { wipeEverywhere } from '@/lib/sync';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
     currentAccount().then(setAccount);
   }, []);
 
-  const xp = schedule.doses.filter((d) => d.logged).length;
+  const xp = loggedCount(schedule);
   const { level } = levelFor(xp);
   const { goals, estimated } = prefs.customGoals ? { goals: prefs.customGoals, estimated: false } : estimateGoals(onboarding);
   const avatarIndex = Math.max(0, AVATARS.indexOf(prefs.avatar as (typeof AVATARS)[number]));
@@ -56,17 +56,9 @@ export default function SettingsScreen() {
       { text: 'Delete account', style: 'destructive', onPress: () => leave(deleteAccount) },
     ]);
   const confirmReset = () =>
-    Alert.alert('Reset all data?', 'Clears protocols, logs, saved peptides and preferences on this device. Your account stays.', [
+    Alert.alert('Reset all data?', 'Clears protocols, dose logs, health entries, chats, saved peptides and preferences from your account — on this device and in the cloud. Your account stays.', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: () => {
-          scheduleStore.set({ protocols: [], doses: [] });
-          preferencesStore.reset();
-          savedStore.get().forEach((id) => savedStore.toggle(id));
-        },
-      },
+      { text: 'Reset', style: 'destructive', onPress: () => void wipeEverywhere() },
     ]);
   const appearance = () => {
     const options = ['System', 'Light', 'Dark', 'Cancel'];

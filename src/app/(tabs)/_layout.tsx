@@ -1,10 +1,10 @@
 import { Tabs } from 'expo-router/js-tabs';
 
 import { FloatingTabBar } from '@/components/home/floating-tab-bar';
-import { QuickActionsSheet } from '@/components/home/quick-actions-sheet';
+import { Toasts } from '@/components/home/toasts';
 import { Brand } from '@/constants/brand';
 
-/** The app proper: four tabs behind a floating pill, plus the "+" quick-actions sheet. */
+/** The app proper: four tabs behind a floating pill; the "+" overlay lives inside the tab bar. */
 export default function TabsLayout() {
   return (
     <>
@@ -16,7 +16,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
         <Tabs.Screen name="me" options={{ title: 'Me' }} />
       </Tabs>
-      <QuickActionsSheet />
+      <Toasts />
     </>
   );
 }

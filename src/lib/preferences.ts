@@ -67,7 +67,7 @@ const initial: Preferences = {
 
 const KEY = 'pepmaxing.preferences.v1';
 let state: Preferences = initial;
-let loaded = false;
+let hydrated: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
@@ -77,8 +77,27 @@ function persist() {
 
 export const preferencesStore = {
   get: () => state,
+  hydrate(): Promise<void> {
+    if (!hydrated) {
+      hydrated = AsyncStorage.getItem(KEY)
+        .then((raw) => {
+          state = raw ? { ...initial, ...(JSON.parse(raw) as Partial<Preferences>) } : { ...initial, username: randomUsername() };
+          if (!state.username) state.username = randomUsername();
+          emit();
+          if (!raw) persist();
+        })
+        .catch(() => {});
+    }
+    return hydrated;
+  },
   set(patch: Partial<Preferences>) {
     state = { ...state, ...patch };
+    emit();
+    persist();
+  },
+  /** Adopts a synced copy (cloud sync). */
+  replace(next: Preferences) {
+    state = { ...initial, ...next };
     emit();
     persist();
   },
@@ -89,17 +108,7 @@ export const preferencesStore = {
   },
   subscribe(listener: () => void) {
     listeners.add(listener);
-    if (!loaded) {
-      loaded = true;
-      AsyncStorage.getItem(KEY)
-        .then((raw) => {
-          state = raw ? { ...initial, ...(JSON.parse(raw) as Partial<Preferences>) } : { ...initial, username: randomUsername() };
-          if (!state.username) state.username = randomUsername();
-          emit();
-          if (!raw) persist();
-        })
-        .catch(() => {});
-    }
+    preferencesStore.hydrate();
     return () => listeners.delete(listener);
   },
 };

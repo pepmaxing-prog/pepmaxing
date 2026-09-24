@@ -12,6 +12,7 @@ import { Spacing, Typeface } from '@/constants/theme';
 import { AuthCancelledError, AuthNotConfiguredError, signInWith, type Provider } from '@/lib/auth';
 import { onboardingStore } from '@/lib/onboarding-store';
 import { reconcileProfile } from '@/lib/profile';
+import { pullAll } from '@/lib/sync';
 
 /** Where a signed-in user lands: the step they had reached, or the referral step right after sign-up. */
 export function resumeRoute(step: string | null, completedAt: string | null): Href {
@@ -21,10 +22,10 @@ export function resumeRoute(step: string | null, completedAt: string | null): Hr
 }
 
 /**
- * Apple + Google buttons with the shared sign-in flow: authenticate, merge the profile with
- * whatever this account already saved, then continue where onboarding left off.
+ * The shared sign-in flow: authenticate, merge the profile with whatever this account already
+ * saved, then continue where onboarding left off. `onSignedIn` runs just before navigating.
  */
-export function SignInActions({ shineDelay = 1400 }: { shineDelay?: number }) {
+export function useSignIn(onSignedIn?: () => void) {
   const router = useRouter();
   const [busy, setBusy] = useState<Provider | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -38,6 +39,9 @@ export function SignInActions({ shineDelay = 1400 }: { shineDelay?: number }) {
       const state = onboardingStore.get();
       onboardingStore.set({ account: provider, name: state.name || (signedIn.fullName?.split(/\s+/)[0] ?? '') });
       const { step, completedAt } = await reconcileProfile({ email: signedIn.email, fullName: signedIn.fullName });
+      // Restore protocols, logs, health, chats, preferences from the cloud before landing.
+      await pullAll().catch(() => {});
+      onSignedIn?.();
       router.replace(resumeRoute(step, completedAt));
     } catch (error) {
       if (error instanceof AuthCancelledError) return;
@@ -46,6 +50,13 @@ export function SignInActions({ shineDelay = 1400 }: { shineDelay?: number }) {
       setBusy(null);
     }
   };
+
+  return { continueWith, busy, notice };
+}
+
+/** Apple + Google buttons for the onboarding account step and Welcome back. */
+export function SignInActions({ shineDelay = 1400 }: { shineDelay?: number }) {
+  const { continueWith, busy, notice } = useSignIn();
 
   return (
     <Animated.View entering={FadeIn.delay(420).duration(480)} style={styles.actions}>

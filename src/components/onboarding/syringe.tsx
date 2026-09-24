@@ -5,7 +5,6 @@ import { Easing, useDerivedValue, useReducedMotion, useSharedValue, withDelay, w
 import { Accent } from '@/constants/theme';
 
 const RED = '#F87171';
-const MAX_UNITS = 30;
 export const SYRINGE_HEIGHT = 64;
 
 /** Horizontal anatomy, left to right. */
@@ -19,38 +18,49 @@ const STOPPER_W = 7;
 
 type Props = {
   width: number;
-  /** Units drawn back (0–30 on the barrel). */
+  /** Units drawn back; clamped to the barrel. */
   units: number;
   tone: 'good' | 'bad';
   /** Delay before the plunger draws back. */
   delay?: number;
   /** Dashed guide at this many units, to show an overshoot against the correct line. */
   guideUnits?: number;
+  /** Barrel capacity in U-100 units: 30 (0.3 mL), 50 (0.5 mL) or 100 (1 mL). */
+  maxUnits?: number;
 };
 
 /**
- * A 30-unit insulin syringe drawn in Skia. Fluid sits against the needle, so the fill grows from
- * the hub end as the stopper is pulled back; the rod and thumb rest follow it out the back.
+ * An insulin syringe drawn in Skia. Fluid sits against the needle, so the fill grows from the
+ * hub end as the stopper is pulled back; the rod and thumb rest follow it out the back. Later
+ * changes to `units` glide the plunger to the new mark.
  */
-export function Syringe({ width, units, tone, delay = 0, guideUnits }: Props) {
+export function Syringe({ width, units, tone, delay = 0, guideUnits, maxUnits = 30 }: Props) {
   const reducedMotion = useReducedMotion();
   const font = useFont(require('@/assets/fonts/Inter-Medium.ttf'), 9);
   const progress = useSharedValue(reducedMotion ? 1 : 0);
+  const clamped = Math.max(0, Math.min(maxUnits, units));
+  const target = useSharedValue(clamped);
 
   useEffect(() => {
     if (reducedMotion) return;
     progress.set(withDelay(delay, withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) })));
   }, [reducedMotion, delay, progress]);
+  useEffect(() => {
+    target.set(reducedMotion ? clamped : withTiming(clamped, { duration: 520, easing: Easing.out(Easing.cubic) }));
+  }, [clamped, reducedMotion, target]);
 
   const color = tone === 'good' ? Accent.primary : RED;
   const midY = SYRINGE_HEIGHT / 2 + 4;
   const barrelX = NEEDLE + HUB;
   const barrelW = width * 0.62;
   const barrelY = midY - BARREL_H / 2;
-  const unitW = barrelW / (MAX_UNITS + 2);
+  const unitW = barrelW / (maxUnits + 2);
   const thumbX = width - THUMB_W;
+  const tickEvery = maxUnits >= 100 ? 2 : 1;
+  const majorEvery = maxUnits <= 30 ? 5 : 10;
+  const labelEvery = maxUnits <= 30 ? 5 : maxUnits <= 50 ? 10 : 20;
 
-  const stopperX = useDerivedValue(() => barrelX + unitW * units * progress.get());
+  const stopperX = useDerivedValue(() => barrelX + unitW * target.get() * progress.get());
   const fillW = useDerivedValue(() => stopperX.get() - barrelX);
   const rodX = useDerivedValue(() => stopperX.get() + STOPPER_W);
   const rodW = useDerivedValue(() => Math.max(0, thumbX - rodX.get()));
@@ -58,13 +68,14 @@ export function Syringe({ width, units, tone, delay = 0, guideUnits }: Props) {
 
   const ticks = useMemo(() => {
     const b = Skia.PathBuilder.Make();
-    for (let u = 0; u <= MAX_UNITS; u++) {
+    for (let u = 0; u <= maxUnits; u += tickEvery) {
       const x = barrelX + unitW * u;
-      const h = u % 10 === 0 ? 9 : u % 5 === 0 ? 7 : 4;
+      const h = u % (majorEvery * 2) === 0 ? 9 : u % majorEvery === 0 ? 7 : 4;
       b.moveTo(x, barrelY + 1).lineTo(x, barrelY + 1 + h);
     }
     return b.build();
-  }, [barrelX, unitW, barrelY]);
+  }, [barrelX, unitW, barrelY, maxUnits, tickEvery, majorEvery]);
+  const labels = useMemo(() => Array.from({ length: Math.floor(maxUnits / labelEvery) }, (_, i) => (i + 1) * labelEvery), [maxUnits, labelEvery]);
 
   return (
     <Canvas style={{ width, height: SYRINGE_HEIGHT }}>
@@ -83,8 +94,8 @@ export function Syringe({ width, units, tone, delay = 0, guideUnits }: Props) {
       <RoundedRect x={barrelX} y={barrelY} width={barrelW} height={BARREL_H} r={4} color="rgba(255,255,255,0.38)" style="stroke" strokeWidth={1} />
       <Line p1={vec(barrelX + 6, barrelY + BARREL_H - 4)} p2={vec(barrelX + barrelW - 6, barrelY + BARREL_H - 4)} color="rgba(255,255,255,0.14)" strokeWidth={1.5} strokeCap="round" />
       {font
-        ? [5, 10, 15, 20, 25, 30].map((u) => (
-            <SkiaText key={u} x={barrelX + unitW * u - (u >= 10 ? 5 : 2.5)} y={barrelY - 5} text={String(u)} font={font} color="rgba(242,242,244,0.62)" />
+        ? labels.map((u) => (
+            <SkiaText key={u} x={barrelX + unitW * u - (u >= 100 ? 7.5 : u >= 10 ? 5 : 2.5)} y={barrelY - 5} text={String(u)} font={font} color="rgba(242,242,244,0.62)" />
           ))
         : null}
 
