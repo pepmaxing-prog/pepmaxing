@@ -1,6 +1,6 @@
 import { onboardingStore } from './onboarding-store';
-import { scheduleStore } from './schedule';
 import { supabase, supabaseConfigured } from './supabase';
+import { flushSync, resetLocalStores } from './sync';
 
 export type AccountInfo = { email: string | null; provider: string | null };
 
@@ -12,14 +12,16 @@ export async function currentAccount(): Promise<AccountInfo> {
   return { email: user?.email ?? null, provider: (user?.app_metadata?.provider as string | undefined) ?? null };
 }
 
-/** Clears everything on the device. The server-side row stays, so signing in again restores it. */
+/** Clears everything on the device. The cloud copy stays, so signing in again restores it. */
 async function forgetDevice() {
   if (supabaseConfigured) await supabase().auth.signOut({ scope: 'local' }).catch(() => {});
   onboardingStore.reset();
-  scheduleStore.set({ protocols: [], doses: [] });
+  resetLocalStores();
 }
 
 export async function signOut(): Promise<void> {
+  // Anything still pending goes up first, so nothing typed in the last seconds is lost.
+  await flushSync().catch(() => {});
   await forgetDevice();
 }
 

@@ -8,11 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT } from '@/components/home/floating-tab-bar';
 import { PeptideRow } from '@/components/library/peptide-row';
 import { StackCard } from '@/components/library/stack-card';
-import { Gutter } from '@/components/onboarding/onboarding-shell';
 import { PressableScale } from '@/components/pressable-scale';
 import { StageBackground } from '@/components/stage/stage-background';
 import { Brand } from '@/constants/brand';
-import { Accent, Spacing, Typeface } from '@/constants/theme';
+import { Accent, AppGutter, Spacing, Typeface } from '@/constants/theme';
 import { CATEGORIES, PEPTIDES, searchPeptides, STACKS, useSaved, type CategoryId } from '@/lib/peptides';
 
 type Filter = CategoryId | 'all';
@@ -145,20 +144,20 @@ function Chip({ label, color, selected, onPress }: { label: string; color: strin
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Brand.black },
-  header: { paddingHorizontal: Gutter, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: { paddingHorizontal: AppGutter, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { color: '#F5F5F7', fontFamily: Typeface.display, fontSize: 32, letterSpacing: -1 },
   subtitle: { marginTop: 2, color: 'rgba(242,242,244,0.5)', fontFamily: Typeface.body, fontSize: 13 },
   savedPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.16)' },
   savedPillOn: { backgroundColor: Accent.primary, borderColor: Accent.primary },
   savedText: { color: '#F5F5F7', fontFamily: Typeface.bodySemiBold, fontSize: 13.5, letterSpacing: -0.1 },
   savedTextOn: { color: '#062B1F' },
-  section: { paddingHorizontal: Gutter },
+  section: { paddingHorizontal: AppGutter },
   search: {
     marginTop: Spacing.four,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    marginHorizontal: Gutter,
+    marginHorizontal: AppGutter,
     paddingHorizontal: Spacing.three,
     height: 50,
     borderRadius: 16,
@@ -167,7 +166,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
   },
   searchInput: { flex: 1, color: '#F5F5F7', fontFamily: Typeface.body, fontSize: 15.5, letterSpacing: -0.15, paddingVertical: 0 },
-  chips: { paddingHorizontal: Gutter, paddingTop: Spacing.three, gap: Spacing.one, flexDirection: 'row' },
+  chips: { paddingHorizontal: AppGutter, paddingTop: Spacing.three, gap: Spacing.one, flexDirection: 'row' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 34, paddingHorizontal: 13, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.14)' },
   chipDot: { width: 7, height: 7, borderRadius: 3.5 },
   chipDotIdle: { opacity: 0.55 },
@@ -177,10 +176,10 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   eyebrow: { color: 'rgba(242,242,244,0.7)', fontFamily: Typeface.bodySemiBold, fontSize: 11.5, letterSpacing: 1.1 },
   eyebrowMeta: { color: 'rgba(242,242,244,0.4)', fontFamily: Typeface.body, fontSize: 12, flexShrink: 1, textAlign: 'right' },
-  rail: { paddingHorizontal: Gutter, gap: Spacing.two, flexDirection: 'row' },
+  rail: { paddingHorizontal: AppGutter, gap: Spacing.two, flexDirection: 'row' },
   list: { gap: Spacing.two },
   empty: { marginTop: Spacing.six, alignItems: 'center', gap: Spacing.one },
   emptyTitle: { color: '#F5F5F7', fontFamily: Typeface.bodySemiBold, fontSize: 17, letterSpacing: -0.3 },
   emptyText: { color: 'rgba(242,242,244,0.55)', fontFamily: Typeface.body, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  disclaimer: { marginTop: Spacing.five, paddingHorizontal: Gutter, color: 'rgba(242,242,244,0.38)', fontFamily: Typeface.body, fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  disclaimer: { marginTop: Spacing.five, paddingHorizontal: AppGutter, color: 'rgba(242,242,244,0.38)', fontFamily: Typeface.body, fontSize: 12, lineHeight: 17, textAlign: 'center' },
 });

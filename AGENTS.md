@@ -81,6 +81,19 @@ TypeScript strict, React Compiler enabled, Reanimated 4 + react-native-worklets.
   keeps all onboarding answers as JSON plus `onboarding_step`, `referral_code`, `units`, RLS = own row.
   `src/lib/profile.ts` upserts after sign-in (`reconcileProfile` adopts remote progress when it is
   further along, e.g. a new device) and `startProfileSync` (root layout) debounces later changes.
+- Cloud sync (`src/lib/sync.ts`): every store — schedule (protocols + logs), health, chat,
+  preferences, saved peptides, custom compounds — is local-first (AsyncStorage) and mirrored as one
+  JSON document per user per store in `public.user_state` (`supabase/migrations/…_user_state.sql`,
+  RLS own rows, `on delete cascade` from `auth.users`, `changed_at` set by the device). `startSync()`
+  (root layout) pulls on start / SIGNED_IN / foreground and pushes 1.5 s after a change with a
+  dirty-retry; `pullAll()` merges before pushing (rules in `sync-merge.ts`: union by id, newer
+  `changed_at` wins a same-id conflict, chats keep the longer copy, saved = union; a fresh install
+  adopts the cloud copy). `useSignIn` awaits `pullAll()` before landing. Compare documents with
+  `stableStringify` — JSONB reorders object keys. `signOut` = `flushSync()` then `resetLocalStores()`
+  (cloud copy stays); Settings → Reset all data = `wipeEverywhere()` (cloud too). Every store exposes
+  `hydrate()` (awaitable, idempotent), `replace()` and `reset()` for this. Onboarding stays in
+  `profiles`. Test users: email sign-ups are disabled on the project, so create one with SQL into
+  `auth.users` + `auth.identities` (see git history of scripts/_sync_e2e_tmp.mjs) and delete it after.
 - Onboarding persists locally: `onboardingStore` mirrors to AsyncStorage (`pepmaxing.onboarding.v1`),
   is hydrated in `_layout.tsx` before any route, and `OnboardingShell` records `step` from the pathname
   (except `welcome-back`). `index.tsx` routes: `completedAt` → `/home`; `account` set but unfinished →
@@ -89,11 +102,34 @@ TypeScript strict, React Compiler enabled, Reanimated 4 + react-native-worklets.
   home; purchases (RevenueCat), PostHog and the Facebook SDK are deliberately not wired yet.
 - The app proper lives in `src/app/(tabs)/` (`home`, `library`, `chat`, `me`) behind `FloatingTabBar`
   (custom `tabBar` from `expo-router/js-tabs` — import Tabs from there, the `expo-router` export is
-  deprecated) plus the "+" `QuickActionsSheet` (`src/lib/quick-actions.ts`). Home: `Calendar` (week strip ↔
+  deprecated) plus the "+" quick-actions overlay (`src/components/home/quick-actions-overlay.tsx`,
+  mounted inside the tab bar so the pill and FAB stay above the scrim; state in
+  `src/lib/quick-actions.ts`). Home: `Calendar` (week strip ↔
   month, one progress shared value; a vertical pan anywhere on the card opens it — the page must use the
   RNGH `ScrollView` and pass its ref as `scrollRef` so `blocksExternalGesture` lets the drag win; closed,
   an upward drag fails over to scrolling; horizontal swipe changes month; needs `GestureHandlerRootView`
-  in the root layout), day view, empty state, `StatTiles`. The FAB pulses with two Skia radial-gradient
+  in the root layout) — collapsed by default behind the header's calendar button (Pep AI's layout),
+  the selected day still drives the Today card. Home order: header (brand, streak, calendar toggle,
+  settings) → `SummaryPager` (one page per tracked compound: Next dose hero with `RingGauge`
+  interval ring + Overdue/Due now/On track, Last dose tile, Level tile — an estimate from the
+  documented half-lives in `HALF_LIFE_HOURS` (`compounds.ts`); compounds without one show "No
+  documented half-life") → Today card (our `DoseRow`s + "Dose history" → `/history`) → `SiteCard`
+  (compact front/back `BodyMap`s, last site in emerald, this week's in amber, "Site not recorded"
+  opens that dose's log). `compoundSummaries` in `schedule.ts` computes it. The pager's last page is
+  `LevelChart` (`src/components/home/level-chart.tsx`): estimated amount in the body over time from
+  `src/lib/pk.ts` — a one-compartment model with first-order absorption (Bateman), summing every
+  logged dose (actual amounts) and, after now, the scheduled ones (dotted projection). Elimination
+  half-lives come from `HALF_LIFE_HOURS` (`compounds.ts`), absorption half-lives from
+  `ABSORPTION_HALF_LIFE_HOURS` (`pk.ts`, tuned to published tmax); compounds without a documented
+  half-life get an honest empty state, never a guessed curve. Ranges 4H/1D/7D/30D/90D/All
+  (`rangeWindow`), long-press-drag scrubs (RNGH Pan → `scheduleOnRN` state), compound picker sheet,
+  ⓘ explains the model. `describeTrend` feeds the Level tile ("Peaks in 10 h" / "Falling · 6-day
+  half-life"). Chart paths are built in plain helper functions — the React Compiler rejects manual
+  `useMemo` around Skia path builders. App screens use `AppGutter` (16pt, `theme.ts`) for side
+  margins; onboarding keeps the wider `Gutter`. Layout is verified on 390 (17e), 402 (17 Pro) and
+  440pt (17 Pro Max): to run the dev build on another simulator, `simctl install` the .app from the
+  main one and copy `Library/Preferences/com.pepmaxing.app.plist` from its data container (the dev
+  launcher's remembered Metro URL) — `simctl openurl` gets stuck on the "Open in Pepmaxing?" alert. The FAB pulses with two Skia radial-gradient
   halos (RN's `radial-gradient` background was not reliable here). Schedule data comes from
   `src/lib/schedule.ts` (in-memory until the protocol builder; `currentStreak`, `nextDose`, date helpers).
 - Library: `src/lib/peptides.ts` is the curated catalogue (39 peptides, 6 stacks, 8 categories with colours)
@@ -101,6 +137,160 @@ TypeScript strict, React Compiler enabled, Reanimated 4 + react-native-worklets.
   is animal-only; no dose ranges until each has a citation. UI: `Vial` (category-coloured), `PeptideRow`,
   `StackCard`; screens `(tabs)/library`, `peptide/[id]`, `stack/[id]` (slide_from_right). Search covers
   name, nickname, blurb, aka and tags; chips filter by category and toggle off on re-tap.
+- Protocol builder (Pep AI's form structure, PeptidePal's flow): `/protocol/new` (slide_from_bottom)
+  picks compounds — MULTI-select with removable chips above Continue; a stack ticks all its components.
+  It reads `src/lib/compounds.ts` (~135 trackables: every Library peptide via `peptideId`, blends with
+  `stackId`, GLP-1 brands, hormones, vitamins/minerals, a few drugs; `COMPOUND_CATEGORIES` = Library
+  categories + `vitamins` + `other`; `POPULAR` orders the default list; `customCompoundsStore` keeps
+  user-added ones; `defaultAdministration`/`defaultUnit` seed each item). Continue → `draftStore.start`
+  (`src/lib/protocol-draft.ts`, in-memory draft shared by the steps) → `/protocol/track` when 2+ were
+  picked (separate vials vs one blend, animated) → `/protocol/schedule` (compound cards with dose badges
+  → `/protocol/compound/[id]` editor: administration, dose+unit, vial mg + BAC water → units to draw
+  via `drawUnits`, optional own frequency/time; then name, frequency, reminder time, start date, cycle,
+  notes). Create checks for an existing protocol with the same compound (alert), then
+  `scheduleStore.addProtocol`, a confetti "Protocol created" beat, `dismissAll` + navigate home with
+  `?created=<name>` for the toast. `?add=1` on the picker adds to the current draft; `?compound=` /
+  `?stack=` preselect (Library detail buttons use them). Sheets (`src/components/protocol/sheets.tsx`):
+  bodies mount fresh on open (no state-sync effects — the React Compiler lint forbids them); time and
+  date use `@expo/ui/swift-ui` `DatePicker` inside a dark `Host` (wheel / graphical).
+- Schedule model (`src/lib/schedule.ts`): `Protocol` { items[] (compoundIds — several for a blend —
+  dose, unit, administration, vialMg, bacMl, optional frequency/time override), frequency (daily /
+  everyOtherDay / weekdays / weekly / everyN / fiveTwo), time `HH:mm`, startDate, cycle (weeks on/off),
+  notes, color }. `scheduleStore` persists `{ protocols, logs }` to AsyncStorage
+  (`pepmaxing.schedule.v1`, hydrated in the root layout with onboarding) and materialises `doses` for a
+  16-week horizon on every change (`buildDoses`; dose id = `protocol:item:day`, so logs survive
+  rebuilds). A `DoseLog` is `{ at, site?, dose?, unit?, note?, skipped? }` (`logDose` / `skipDose` /
+  `unlog`); a skipped dose counts as handled for the streak but not for `loggedCount`. Reminder
+  notifications for the scheduled times and Supabase sync of protocols are still to do.
+- Dose logging (PeptidePal's flow): a home row → `/log/[doseId]` (slide_from_bottom): hero, DOSE /
+  SITE / TIME cards with Edit, note, "Skip this dose"; re-opening a logged dose edits or removes it.
+  SITE only appears for injections and pens (`kindFor` in `src/lib/sites.ts`). The site sheet
+  (`src/components/protocol/site-sheet.tsx`) is a full-screen modal: one large `BodyMap`
+  (`body-map.tsx`) with a Front / Back switch (two small maps side by side made the points too
+  close to tap). The map is an anatomical illustration from `assets/body/{male,female}-{front,back}.png`
+  (Higgsfield `gpt_image_2_5`, transparent, trimmed and padded to 500×1100 = a 100×220 box, PNG8)
+  chosen from the onboarding `sex` (female → female, anything else → male), with 28 Skia point
+  markers from `POINTS[figure]` in `sites.ts` — fractions read off the artwork, so re-measure if the
+  art changes. Mirrored pairs per region: abdomen ×3 rows, flanks, front + outer thigh, delts and
+  rear delts (IM), outer arm (front) and back of arm (back), hip/ventrogluteal (IM), glute + upper
+  glute, back of thigh. Markers used in the last 7 days turn amber; only the selected and suggested
+  points carry a label pill (beside the marker, outer side); the status line says when the chosen
+  point was last used. "✦ Suggest the next site" — `suggestSite` rotates: never
+  the last site, skip anything used in the past week when possible, then least-recently used in an
+  absorption-friendly order, with a one-sentence reason. `/log` (from the "+" pill) lists today's
+  open doses. Toasts are global: `toast.show(text, { label, onPress })` in `src/lib/toast.ts`,
+  rendered by `Toasts` in the tabs layout above the tab bar (used for Created / Logged · Undo).
+- `/calculator`: reconstitution maths on the generalised `Syringe` (`maxUnits` 30/50/100, plunger
+  glides to new values). Warns above capacity and for draws under 5 units; never suggests a dose.
+- Health: `src/lib/health.ts` (`healthStore`, AsyncStorage, values stored metric) + `/health/[metric]`
+  (number with unit per `units`, or a 1–5 scale for mood/energy). The "+" overlay's "Log health"
+  swaps in a sub-menu of the six metrics.
+  "Add vials" (inventory) is still a placeholder.
+- Chat tab = the assistant (`src/app/(tabs)/chat.tsx`, Pep AI's layout on our stage): header with
+  conversations (☰ → sheet, delete per row) and "New chat"; empty state greets by name with the
+  date; a skills rail above the composer and the same list in the "+" sheet (`SKILLS` in
+  `src/lib/assistant/skills.ts`, each chip sends a prompt; `skillPrompt` makes Research contextual);
+  composer with rotating `PLACEHOLDERS`. It is NOT an LLM: `src/lib/assistant/engine.ts` is an
+  intent router grounded in the library and the user's data — research cards (status, overview,
+  tags, PubMed/ClinicalTrials.gov/PMC search links + the disclaimer), reconstitution math from
+  "5 mg vial, 2 mL water, 250 mcg dose", insights (14-day adherence, weight trend in the user's
+  units, mood, estimated levels, site rotation), current stack, today's open doses, next-site
+  suggestion (`suggestSite`), navigation help, honest "not in this build" for food/photos, and a
+  fallback that lists what it can do. Compound mentions match names, brand names, nicknames and
+  4+ letter prefixes ("reta"); one card per active compound, the library peptide over its brands.
+  Hermes has no regex look-behind — don't use `(?<=` anywhere. `chatStore` (`store.ts`) persists
+  conversations to AsyncStorage (`pepmaxing.chat.v1`), plays the reply's `statuses` ("Thinking",
+  "Checking the research library…") before appending it, and stores 👍/👎 per message. Message
+  rendering (`src/components/chat/message.tsx`) supports **bold**, cards (research / recon /
+  insight / stack / doses) and action buttons that `router.push` an href. The tab icon is
+  `ChatGlyph` (Skia bubble + spark, filled when active). Wiring a real model later = one more
+  branch in `respond()` (e.g. a Supabase Edge Function holding the API key).
+- Me tab (`src/app/(tabs)/me.tsx`, PeptidePal's "Me" area): while Me is focused `FloatingTabBar`
+  morphs into the Me bar — a round Home button + Nutrition / Progress / Stack / Community, no "+".
+  One shared value (`me`, 320 ms ease-in-out) drives the whole morph like the reference: app tabs
+  slide left and fade, Me sections slide in from the right, the pill's left edge/width interpolate
+  to make room for the Home button (scales in), the "+" shrinks and fades; the pill clips its two
+  layers with `overflow: hidden` and the inactive layer gets `pointerEvents: 'none'` +
+  `accessibilityElementsHidden`. The section lives in `src/lib/me-section.ts`
+  (`meSection` store, `useMeSection`). The screen shows a profile header (avatar/username from
+  preferences, level from `loggedCount`), the section title and the section (`src/components/me/*`). Progress: Insights banner
+  (opens Chat and asks "How am I doing?" on the user's data), six metric tiles (latest, delta vs
+  previous, `Sparkline`, tap → `/metric/[id]` with trend + entries + delete), photos rows (honest
+  "coming with camera support" — no camera module yet), invite/share. Nutrition
+  (`src/lib/nutrition.ts`, synced store `nutrition`): protein `RingGauge` + 5 g steppers, fibre,
+  water (oz or mL per `units`), kcal/carbs/fat bars against `customGoals ?? estimateGoals`,
+  today's meals (manual or from `FOODS`, USDA-rounded staples), steppers write one "Quick adds"
+  line via `adjustQuick`. Stack: protocols with Active/Paused (`Protocol.pausedAt`; `buildDoses`
+  skips undealt days from the pause) → `/protocol/[id]` (schedule, so-far, pause/resume, delete;
+  editing in place is still to do); Vials (`src/lib/vials.ts`, synced store `vials`): stock per
+  compound, `stockStatus` subtracts every logged dose since `openedAt`, "reorder soon" under 3
+  doses, suggestions from injectable protocols. Community is a placeholder (needs a backend +
+  moderation). `user_state.store` check constraint lists every synced store — extend it by
+  migration when adding one (see `…_user_state_more_stores.sql`).
+- Food library (`src/lib/foods.ts`): three tiers behind one `FoodItem` shape (macros per 100 g,
+  `servings` with grams, `macrosFor` scales). (1) Curated: `assets/data/foods-curated.json` (~205
+  foods, USDA numbers, hand-set serving sizes, category/popularity/tags — tags carry synonyms such as
+  jasmine/basmati → white rice) bundled for instant offline search (`searchCurated`, `popularMix`).
+  (2) Library: `public.foods` (~13.2k rows: USDA SR Legacy + Foundation generics and FNDDS "survey"
+  foods as eaten — sushi rolls, burritos, ramen bowls — plus every packaged product ever looked up;
+  public read, RLS) through the `search_foods(q, lim)` RPC: strict all-words full-text + pg_trgm +
+  popularity, word matches ranked above trigram look-alikes, and an any-word fallback when the strict
+  pass is empty. The tsvector is a generated column (`array_to_tsvector` for tags because
+  `array_to_string` isn't immutable) and the function pins `search_path=''` so the trigram operator is
+  written `operator(extensions.%)`. SR names are cleaned by `cleanName` (drops lab jargon, keeps cut /
+  lean / cooking method), FNDDS by `cleanSurveyName` (drops NFS / "NS as to"), and names that still
+  collide fall back to the full description. (3) Packaged: Edge Function `food-search`
+  (`supabase/functions/`, verify_jwt + its own `getUser()` check — the platform JWT check accepts the
+  anon key) queries USDA FDC **Branded** (400k+ US products, label data; secret `USDA_API_KEY`, falls
+  back to DEMO_KEY = 30 req/hour — get a free key at fdc.nal.usda.gov/api-key-signup and add it under
+  Edge Functions → Secrets) and Open Food Facts (worldwide, ODbL, often slow → 6 s timeout) in parallel,
+  re-ranks by query-word hits, normalises and caches into `foods`; barcode lookups try OFF then FDC by
+  GTIN. Quota: `public.food_search_log` (RLS on, no policies → service role only) records every
+  upstream query; the same normalised query is not re-fetched for 14 days (its products are already in
+  `foods`, which the library RPC returns) and USDA calls stop at 900/hour (25 on DEMO_KEY) so the app
+  degrades to library + cache instead of hitting 429s; barcode fallbacks to USDA are logged as
+  `gtin:<code>` and count too. Per-user throttle: 120 upstream-triggering requests/hour, tracked as
+  `u:<user_id>:…` rows (excluded from the global budget count). The client only calls the function
+  after 3+ characters and a 500 ms pause. Scale plan (~50–100k users): import USDA Branded (400k) and a
+  filtered Open Food Facts dump (~2–3M rows with barcode + name + nutriments) into `foods` so barcodes
+  resolve locally; OFF's API allows ~100 product reads/min and Edge Functions share egress IPs. Regenerate the data with `node scripts/foods/ingest-usda.mjs <sr_dir> <foundation_dir>
+  [<fndds_dir>]` (CSV zips from fdc.nal.usda.gov/download-datasets; curated list in
+  `scripts/foods/curated.mjs`, resolved by description prefix, report in /tmp/usda/report.txt); it
+  writes the bundle and 400-row SQL chunks.
+  Bulk loads go through a temporary token-guarded SECURITY DEFINER RPC created and dropped in the
+  same session (see git history) — never leave it in place. Show `ATTRIBUTION` wherever foods appear
+  (OFF is ODbL). UI: `/food/search` (slide_from_bottom: curated results instantly, library + packaged
+  stream in; empty state = recents, favourites, browse categories) and `FoodSheet` (servings, ×
+  multiplier, grams override, live macros, favourite, Add). `NutritionDoc` carries `recents`,
+  `favourites` and `known` (non-curated foods used, so they render offline); `addMeal(meal, food)`
+  maintains them. Next phases: camera rebuild (barcode + label OCR + progress photos), `analyze-meal`
+  Edge Function with OpenAI (photos processed and discarded), generated food images (~200).
+- `ShineButton` is the 58pt full-width screen/sheet CTA; `size="compact"` (44pt, self-sized pill) is
+  for actions inside cards — never put the full-size one inside a card. Nutrition opens with
+  `ScanCard` (`src/components/me/scan-card.tsx`: viewfinder with an animated scan line, Skia radial
+  glow — RN's `radial-gradient` background renders with a hard edge — and Barcode / Nutrition-label
+  pills that open `/food/scan?mode=`).
+- Camera (Phase 2): `expo-camera` (barcode scanner on), `expo-image-picker`, `expo-image-manipulator`,
+  `expo-file-system` are installed with permission strings in `app.json` (no microphone). `/food/scan`
+  (slide_from_bottom): Barcode mode scans ean13/ean8/upc_a/upc_e/code128 → `lookupBarcode` →
+  `FoodSheet`; Nutrition-label mode takes/picks a photo → `imageToBase64` (1280 px, q 0.8, cache file
+  deleted) → Edge Function `read-label` (OpenAI vision, Chat Completions + strict json_schema, model
+  `OPENAI_VISION_MODEL` default gpt-4.1-mini, needs the `OPENAI_API_KEY` secret, image never stored,
+  own `getUser()` check) → `foodFromLabel` (per-serving → per 100 g, source 'custom') → `FoodSheet`.
+  Simulators have no camera: `Device.isDevice` false → typed barcode + library picker instead of a
+  black preview; a permission refused for good (`status === 'denied' && !canAskAgain`) offers Settings.
+- Progress photos: `src/lib/photos.ts` — metadata is the synced `photos` store (`ProgressPhoto`
+  {id, category face|body|hair, at, note, uploaded}); bytes are local-first in
+  `Paths.document/progress-photos/<id>.jpg` (downscaled to 1600 px, q 0.82) and uploaded to the
+  private Storage bucket `progress-photos` at `<user_id>/<id>.jpg` (RLS on storage.objects: own
+  folder only, JPEG only, 5 MB; verified with a test user — other folders and anonymous refused).
+  `PhotoThumb` renders the local file and calls `ensureLocal` (download) when a new phone lacks it;
+  `uploadPending()` retries; `remove` deletes both copies; `wipeEverywhere` also empties the bucket
+  folder. UI: Progress rows (count, latest thumb, + capture via `addProgressPhoto` — camera or library,
+  library only on simulators) → `/photos/[category]` (compare first/selected vs latest, grid, hold to
+  delete). Pipeline verified on the simulator by seeding two bundled images (removed).
+- `scripts/dev/frames.swift` extracts PNG frames from a reference recording
+  (`swift scripts/dev/frames.swift in.mp4 outDir start step count`); pair with `contact-sheet.mjs`.
 - `/settings` (slide_from_right): units, reminders (→ system settings), sign out, delete account.
   Deletion calls the `delete-account` Edge Function (`supabase/functions/delete-account`, deployed via MCP,
   verify_jwt on) which deletes the caller with the service role; `src/lib/account.ts` then forgets the device.

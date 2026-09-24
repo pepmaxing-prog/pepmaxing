@@ -24,14 +24,18 @@ type Props = Omit<PressableProps, 'style'> & {
   style?: StyleProp<ViewStyle>;
   /** Delay before the first sweep, e.g. to wait for an entrance animation. */
   shineDelay?: number;
+  /** `compact` is the inline size for actions inside cards; the default is the full-width screen CTA. */
+  size?: 'default' | 'compact';
 };
 
 const HEIGHT = 58;
+const COMPACT_HEIGHT = 44;
 const SWEEP_MS = 1100;
 const SWEEP_EVERY_MS = 4200;
 
 /** Primary call-to-action: a light surface with a slow specular sweep and a soft glow. */
-export function ShineButton({ label, icon, style, shineDelay = 0, disabled, ...pressable }: Props) {
+export function ShineButton({ label, icon, style, shineDelay = 0, disabled, size = 'default', ...pressable }: Props) {
+  const compact = size === 'compact';
   const reducedMotion = useReducedMotion();
   const sweep = useSharedValue(0);
   const enabled = useSharedValue(disabled ? 0 : 1);
@@ -70,19 +74,19 @@ export function ShineButton({ label, icon, style, shineDelay = 0, disabled, ...p
   }));
 
   return (
-    <Animated.View style={[style, enabledStyle]}>
+    <Animated.View style={[compact && styles.compactWrap, style, enabledStyle]}>
       <PressableScale
         accessibilityRole="button"
         accessibilityState={{ disabled: !!disabled }}
         disabled={disabled}
         {...pressable}
-        style={styles.glow}>
-        <View style={styles.surface}>
+        style={[styles.glow, compact && styles.compactGlow]}>
+        <View style={[styles.surface, compact && styles.compactSurface]}>
           <Animated.View pointerEvents="none" style={[styles.shine, shineStyle]} />
-          <View pointerEvents="none" style={styles.topEdge} />
+          <View pointerEvents="none" style={[styles.topEdge, compact && styles.compactTopEdge]} />
           <View style={styles.row}>
             {icon}
-            <Text style={styles.label}>{label}</Text>
+            <Text style={[styles.label, compact && styles.compactLabel]}>{label}</Text>
           </View>
         </View>
       </PressableScale>
@@ -127,6 +131,11 @@ const styles = StyleSheet.create({
     experimental_backgroundImage:
       'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0.95) 55%, rgba(255,255,255,0) 100%)',
   },
+  compactWrap: { alignSelf: 'center' },
+  compactGlow: { borderRadius: COMPACT_HEIGHT / 2, shadowOpacity: 0.1, shadowRadius: 14 },
+  compactSurface: { height: COMPACT_HEIGHT, borderRadius: COMPACT_HEIGHT / 2, paddingHorizontal: 22 },
+  compactTopEdge: { left: COMPACT_HEIGHT / 2, right: COMPACT_HEIGHT / 2 },
+  compactLabel: { fontSize: 15 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   label: {
     color: Brand.black,

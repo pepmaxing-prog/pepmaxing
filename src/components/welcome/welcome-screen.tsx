@@ -19,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SignInSheet } from '@/components/onboarding/sign-in-sheet';
 import { PressableScale } from '@/components/pressable-scale';
 import { ShineButton } from '@/components/shine-button';
 import { StageBackground } from '@/components/stage/stage-background';
@@ -57,6 +58,7 @@ export function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const splashPhase = useSplashPhase();
+  const [signInOpen, setSignInOpen] = useState(false);
 
   // ---- layout ----
   const brandTop = insets.top + Spacing.two;
@@ -219,12 +221,14 @@ export function WelcomeScreen() {
           shineDelay={1400}
           onPress={() => router.push('/onboarding/name')}
         />
-        <PressableScale style={styles.signIn} accessibilityRole="button" pressedScale={0.98} hitSlop={8} onPress={() => {}}>
+        <PressableScale style={styles.signIn} accessibilityRole="button" accessibilityLabel="Sign in to an existing account" pressedScale={0.98} hitSlop={8} onPress={() => setSignInOpen(true)}>
           <Text style={styles.signInText}>
             Already have an account? <Text style={styles.signInLink}>Sign in</Text>
           </Text>
         </PressableScale>
       </Animated.View>
+
+      <SignInSheet open={signInOpen} onClose={() => setSignInOpen(false)} />
     </View>
   );
 }

@@ -3,12 +3,12 @@ import { useSyncExternalStore } from 'react';
 
 export type CategoryId = 'healing' | 'growth' | 'weight' | 'longevity' | 'cognitive' | 'hormonal' | 'immune' | 'sleep';
 
-export type Category = { id: CategoryId; label: string; color: string; blurb: string };
+export type Category<Id extends string = CategoryId> = { id: Id; label: string; color: string; blurb: string };
 
 export const CATEGORIES: Category[] = [
   { id: 'healing', label: 'Healing', color: '#34D399', blurb: 'Tissue, tendon and gut repair' },
   { id: 'growth', label: 'Growth hormone', color: '#7DD3FC', blurb: 'GH release and body composition' },
-  { id: 'weight', label: 'Weight loss', color: '#FBBF24', blurb: 'Appetite, glucose and fat loss' },
+  { id: 'weight', label: 'Metabolic', color: '#FBBF24', blurb: 'Appetite, glucose and fat loss' },
   { id: 'longevity', label: 'Longevity', color: '#C084FC', blurb: 'Cellular and mitochondrial health' },
   { id: 'cognitive', label: 'Cognitive', color: '#818CF8', blurb: 'Focus, mood and neuroprotection' },
   { id: 'hormonal', label: 'Hormonal', color: '#FB7185', blurb: 'Reproductive and sexual health' },
@@ -692,30 +692,44 @@ export const STATUS_LABEL: Record<Status, string> = {
 
 const SAVED_KEY = 'pepmaxing.library.saved.v1';
 let saved: string[] = [];
-let savedLoaded = false;
+let savedHydrated: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
+const persistSaved = () => AsyncStorage.setItem(SAVED_KEY, JSON.stringify(saved)).catch(() => {});
 
 export const savedStore = {
   get: () => saved,
-  toggle(id: string) {
-    saved = saved.includes(id) ? saved.filter((s) => s !== id) : [...saved, id];
-    emit();
-    AsyncStorage.setItem(SAVED_KEY, JSON.stringify(saved)).catch(() => {});
-  },
-  subscribe(listener: () => void) {
-    listeners.add(listener);
-    if (!savedLoaded) {
-      savedLoaded = true;
-      AsyncStorage.getItem(SAVED_KEY)
+  hydrate(): Promise<void> {
+    if (!savedHydrated) {
+      savedHydrated = AsyncStorage.getItem(SAVED_KEY)
         .then((raw) => {
-          if (raw) {
-            saved = JSON.parse(raw) as string[];
-            emit();
-          }
+          if (!raw) return;
+          saved = JSON.parse(raw) as string[];
+          emit();
         })
         .catch(() => {});
     }
+    return savedHydrated;
+  },
+  toggle(id: string) {
+    saved = saved.includes(id) ? saved.filter((s) => s !== id) : [...saved, id];
+    emit();
+    persistSaved();
+  },
+  /** Adopts a merged list (cloud sync). */
+  replace(next: string[]) {
+    saved = [...new Set(next)];
+    emit();
+    persistSaved();
+  },
+  reset() {
+    saved = [];
+    emit();
+    persistSaved();
+  },
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    savedStore.hydrate();
     return () => listeners.delete(listener);
   },
 };
